@@ -37,6 +37,11 @@ dependencies {
     // mysql - start
     runtimeOnly("com.mysql:mysql-connector-j")
     // mysql - end
+
+    //lombok - start
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+    //lombok - end
 }
 
 dependencyManagement {

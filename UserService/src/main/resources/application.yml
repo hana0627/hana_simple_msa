@@ -4,12 +4,20 @@ server:
 spring:
   application:
     name: user-service
-    datasource:
-      url: ${MYSQL_URL}
-      username: ${MYSQL_USERNAME}
-      password: ${MYSQL_PASSWORD}
-      hikari:
-        driver-class-name: com.mysql.cj.jdbc.Drive
+  datasource:
+    url: ${MYSQL_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    hikari:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 200
 
 eureka:
   instance:

@@ -24,6 +24,8 @@ ext {
 }
 
 dependencies {
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
@@ -32,8 +34,9 @@ dependencies {
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     
-    // mysql 추가
+    // mysql - start
     runtimeOnly("com.mysql:mysql-connector-j")
+    // mysql - end
 }
 
 dependencyManagement {

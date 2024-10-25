@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: user-service
+    datasource:
+      url: ${MYSQL_URL}
+      username: ${MYSQL_USERNAME}
+      password: ${MYSQL_PASSWORD}
+      hikari:
+        driver-class-name: com.mysql.cj.jdbc.Drive
 
 eureka:
   instance:

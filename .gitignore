@@ -1,0 +1,35 @@
+# Default ignored files
+/shelf/
+/.idea
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+*.iml
+
+gradlew.bat
+gradlew
+
+/APIGateway/.gradle/
+/APIGateway/build/
+/APIGateway/gradle/
+/APIGateway/*.bat
+/APIGateway/.gitattributes
+/APIGateway/gradlew
+
+
+/DiscoveryService/.gradle/
+/DiscoveryService/build/
+/DiscoveryService/gradle/
+/DiscoveryService/*.bat
+/DiscoveryService/.gitattributes
+/DiscoveryService/gradlew
+
+
+/UserService/.gradle/
+/UserService/build/
+/UserService/gradle/
+/UserService/*.bat
+/UserService/.gitattributes
+/UserService/gradlew

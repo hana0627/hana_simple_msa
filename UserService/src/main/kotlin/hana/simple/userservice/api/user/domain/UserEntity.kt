@@ -17,11 +17,14 @@ data class UserEntity (
     var phoneNumber: String,
     @Column(length = 1)
     @Enumerated(EnumType.STRING)
-    val gender: Gender,
+    var gender: Gender,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long?,
 ) : AuditingFields() {
+    fun changePassword(newPassword: String) {
+        this.password = newPassword
+    }
 
     companion object{
         fun fixture(

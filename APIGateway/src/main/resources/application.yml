@@ -17,3 +17,5 @@ spring:
           uri: lb://user-service #등록된 MicroService 이름
           predicates: # 조건절과 같은 의미
             - Path=/user-service/** #Path 정보를 지정
+          filters:
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}

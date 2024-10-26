@@ -47,7 +47,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            post("/user-service/create/user")
+            post("/create/user")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
         )
@@ -74,7 +74,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            get("/user-service/user/{userId}", userId))
+            get("/user/{userId}", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.result.userId").value(userInformation.userId))
             .andExpect(jsonPath("$.result.userName").value(userInformation.userName))
@@ -104,7 +104,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            patch("/user-service/user/{userId}/password", userId)
+            patch("/user/{userId}/password", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
             .andExpect(status().isOk)
@@ -130,7 +130,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            delete("/user-service/user/{userId}", userId)
+            delete("/user/{userId}", userId)
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.result").value(1L))

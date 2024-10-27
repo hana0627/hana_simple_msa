@@ -7,6 +7,8 @@ import hana.simple.userservice.api.user.domain.UserEntity
 import hana.simple.userservice.api.user.repository.UserRepository
 import hana.simple.userservice.api.user.service.UserService
 import hana.simple.userservice.api.user.service.impl.UserServiceImpl
+import hana.simple.userservice.global.exception.ApplicationException
+import hana.simple.userservice.global.exception.constant.ErrorCode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -20,8 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 class UserServiceTest (
     @Mock private val userRepository: UserRepository,
 ){
-
-    //TODO 예외객체 테스트
 
     @InjectMocks
     private val userService: UserService = UserServiceImpl(userRepository)
@@ -55,14 +55,15 @@ class UserServiceTest (
         given(userRepository.findByUserId(dto.userId)).willReturn(existingUser)
 
         //when & then
-        val result = assertThrows<RuntimeException> {userService.join(dto)}
+        val result = assertThrows<ApplicationException> {userService.join(dto)}
 
         then(userRepository).should().findByUserId(dto.userId)
         then(userRepository).should(times(0)).save(existingUser)
 
-        
-        //TODO 예외객체 테스트
-        //assertThat(result.message).isEqualTo("A")
+//        assertThat(result.errorCode).isEqualTo(ErrorCode.DUPLICATE_USER)
+        assertThat(result.message).isEqualTo("이미 사용중인 아이디 입니다.")
+        assertThat(result.getErrorCode).isEqualTo(ErrorCode.DUPLICATE_USER)
+        assertThat(result.getMessage ).isEqualTo("이미 사용중인 아이디 입니다.")
     }
 
     @Test
@@ -94,11 +95,15 @@ class UserServiceTest (
         given(userRepository.findByUserId("wrongUser")).willReturn(null)
 
         //when
-        val result = assertThrows<RuntimeException> {userService.getUserInformation("wrongUser")}
+        val result = assertThrows<ApplicationException> {userService.getUserInformation("wrongUser")}
 
         //then
         then(userRepository).should().findByUserId("wrongUser")
-        //TODO 예외객체 테스트
+
+//        assertThat(result.errorCode).isEqualTo(ErrorCode.USER_NOT_FOUND)
+        assertThat(result.message).isEqualTo("회원 정보를 찾을 수 없습니다.")
+        assertThat(result.getErrorCode).isEqualTo(ErrorCode.USER_NOT_FOUND)
+        assertThat(result.getMessage ).isEqualTo("회원 정보를 찾을 수 없습니다.")
     }
 
     @Test
@@ -131,11 +136,13 @@ class UserServiceTest (
         given(userRepository.findByUserId("wrongUser")).willReturn(null)
 
         //when & then
-        val result = assertThrows<RuntimeException> { userService.changePassword(userId, userPasswordChange)}
+        val result = assertThrows<ApplicationException> { userService.changePassword(userId, userPasswordChange)}
         then(userRepository).should(times(0)).save(any())
 
-        // TODO 예외객체테스트
-
+//        assertThat(result.errorCode).isEqualTo(ErrorCode.USER_NOT_FOUND)
+        assertThat(result.message).isEqualTo("회원 정보를 찾을 수 없습니다.")
+        assertThat(result.getErrorCode).isEqualTo(ErrorCode.USER_NOT_FOUND)
+        assertThat(result.getMessage ).isEqualTo("회원 정보를 찾을 수 없습니다.")
     }
 
 
@@ -166,12 +173,13 @@ class UserServiceTest (
         given(userRepository.findByUserId(userId)).willReturn(null)
 
         //when & then
-        val result = assertThrows<RuntimeException> { userService.deleteUser(userId) }
+        val result = assertThrows<ApplicationException> { userService.deleteUser(userId) }
 
         then(userRepository).should().findByUserId(userId)
         then(userRepository).should(times(0)).delete(any())
         
-        //TODO 예외객체 테스트
-
+        assertThat(result.message).isEqualTo("회원 정보를 찾을 수 없습니다.")
+        assertThat(result.getErrorCode).isEqualTo(ErrorCode.USER_NOT_FOUND)
+        assertThat(result.getMessage ).isEqualTo("회원 정보를 찾을 수 없습니다.")
     }
 }

@@ -1,12 +1,13 @@
 package hana.simple.userservice.api.user.service.impl
 
-import hana.simple.userservice.api.common.domain.constant.Gender
 import hana.simple.userservice.api.user.controller.request.UserCreate
 import hana.simple.userservice.api.user.controller.request.UserPasswordChange
 import hana.simple.userservice.api.user.controller.response.UserInformation
 import hana.simple.userservice.api.user.domain.UserEntity
 import hana.simple.userservice.api.user.repository.UserRepository
 import hana.simple.userservice.api.user.service.UserService
+import hana.simple.userservice.global.exception.ApplicationException
+import hana.simple.userservice.global.exception.constant.ErrorCode
 import lombok.RequiredArgsConstructor
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,8 +21,7 @@ class UserServiceImpl(
     //TODO 예외처리 추가
     //TODO redis 추가
     //TODO passwordEncoder 추가
-    //TODO findById 메서드 분리
-    
+
     //CREATE
     @Transactional
     override fun join(dto: UserCreate): Long {
@@ -41,7 +41,7 @@ class UserServiceImpl(
 
     //READ
     override fun getUserInformation(userId: String): UserInformation {
-        val user: UserEntity = userRepository.findByUserId(userId) ?: throw RuntimeException()
+        val user: UserEntity = getUserByUserIdOrException(userId)
         return UserInformation(
             userId = user.userId,
             userName = user.userName,
@@ -53,7 +53,7 @@ class UserServiceImpl(
     //UPDATE
     @Transactional
     override fun changePassword(userId: String, userPasswordChange: UserPasswordChange): Long {
-        val user: UserEntity = userRepository.findByUserId(userId) ?: throw RuntimeException()
+        val user: UserEntity = getUserByUserIdOrException(userId)
         if(user.password.equals(userPasswordChange.currentPassword) && userPasswordChange.newPassword == userPasswordChange.confirmPassword) {
             user.changePassword(userPasswordChange.newPassword);
             return userRepository.save(user).id!!
@@ -65,7 +65,7 @@ class UserServiceImpl(
     //DELETE
     @Transactional
     override fun deleteUser(userId: String): Long {
-        val user: UserEntity = userRepository.findByUserId(userId) ?: throw RuntimeException()
+        val user: UserEntity = getUserByUserIdOrException(userId)
         userRepository.delete(user)
         return user.id!!
     }
@@ -73,9 +73,13 @@ class UserServiceImpl(
 
     private fun duplicateUser(userId: String): Boolean {
         if(userRepository.findByUserId(userId) != null) {
-            throw RuntimeException()
+            throw ApplicationException(ErrorCode.DUPLICATE_USER, "이미 사용중인 아이디 입니다.")
         }
         return true
+    }
+
+    private fun getUserByUserIdOrException(userId: String): UserEntity {
+        return userRepository.findByUserId(userId) ?: throw ApplicationException(ErrorCode.USER_NOT_FOUND, "회원 정보를 찾을 수 없습니다.")
     }
 
 }

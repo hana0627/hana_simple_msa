@@ -1,11 +1,13 @@
 package hana.simple.userservice.api.user.service.impl
 
 import hana.simple.userservice.api.user.controller.request.UserCreate
+import hana.simple.userservice.api.user.controller.request.UserLogin
 import hana.simple.userservice.api.user.controller.request.UserPasswordChange
 import hana.simple.userservice.api.user.controller.response.UserInformation
 import hana.simple.userservice.api.user.domain.UserEntity
 import hana.simple.userservice.api.user.repository.UserRepository
 import hana.simple.userservice.api.user.service.UserService
+import hana.simple.userservice.global.config.CustomPasswordEncoder
 import hana.simple.userservice.global.exception.ApplicationException
 import hana.simple.userservice.global.exception.constant.ErrorCode
 import lombok.RequiredArgsConstructor
@@ -17,10 +19,9 @@ import org.springframework.transaction.annotation.Transactional
 @RequiredArgsConstructor
 class UserServiceImpl(
     private val userRepository: UserRepository,
+    private val passwordEncoder: CustomPasswordEncoder,
 ) : UserService {
-    //TODO 예외처리 추가
     //TODO redis 추가
-    //TODO passwordEncoder 추가
 
     //CREATE
     @Transactional
@@ -29,7 +30,7 @@ class UserServiceImpl(
             val user: UserEntity = UserEntity(
                 userId = dto.userId,
                 userName = dto.userName,
-                password = dto.password,
+                password = passwordEncoder.encode(dto.password),
                 phoneNumber = dto.phoneNumber,
                 gender = dto.gender,
                 id = null,
@@ -37,6 +38,15 @@ class UserServiceImpl(
             return userRepository.save(user).id!!
         }
         throw RuntimeException()
+    }
+
+    override fun login(userLogin: UserLogin): Long {
+        val user: UserEntity = getUserByUserIdOrException(userLogin.userId)
+        return if (passwordEncoder.matches(userLogin.password, user.password)) {
+            user.id!!
+        }else {
+            throw ApplicationException(ErrorCode.LOGIN_FAIL, "아이디가 없거나 비밀번호가 잘못되었습니다.")
+        }
     }
 
     //READ
@@ -54,10 +64,12 @@ class UserServiceImpl(
     @Transactional
     override fun changePassword(userId: String, userPasswordChange: UserPasswordChange): Long {
         val user: UserEntity = getUserByUserIdOrException(userId)
-        if(user.password.equals(userPasswordChange.currentPassword) && userPasswordChange.newPassword == userPasswordChange.confirmPassword) {
-            user.changePassword(userPasswordChange.newPassword);
-            return userRepository.save(user).id!!
 
+        if(userPasswordChange.newPassword == userPasswordChange.confirmPassword) {
+            if(passwordEncoder.matches(userPasswordChange.currentPassword, user.password)) {
+                user.changePassword(passwordEncoder.encode(userPasswordChange.newPassword))
+                return userRepository.save(user).id!!
+            }
         }
         throw RuntimeException()
     }

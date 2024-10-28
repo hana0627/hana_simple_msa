@@ -1,6 +1,7 @@
 package hana.simple.userservice.api.user.controller
 
 import hana.simple.userservice.api.user.controller.request.UserCreate
+import hana.simple.userservice.api.user.controller.request.UserLogin
 import hana.simple.userservice.api.user.controller.request.UserPasswordChange
 import hana.simple.userservice.api.user.controller.response.UserInformation
 import hana.simple.userservice.api.user.service.UserService
@@ -13,9 +14,14 @@ import org.springframework.web.bind.annotation.*
 class UserController (
     private val userService: UserService,
 ){
-    @PostMapping("/v1/create/user")
+    @PostMapping("/v1/user")
     fun createUser(@RequestBody userCreate: UserCreate): APIResponse<Long> {
         return APIResponse.success(userService.join(userCreate))
+    }
+
+    @PostMapping("/v1/user/login")
+    fun login(@RequestBody userLogin: UserLogin): APIResponse<Long> {
+        return APIResponse.success(userService.login(userLogin))
     }
 
     @GetMapping("/v2/user/{userId}")

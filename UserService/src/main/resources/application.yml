@@ -31,3 +31,9 @@ eureka:
     service-url:
       #아래 경로에 MicroService로 등록
       defaultZone: http://127.0.0.1:8761/eureka
+
+jwt:
+  secret-key: ${SECRET_KEY}
+  #30min
+  token.expired-time-ms: 1800
+  refresh.expired-time-ms: 4000

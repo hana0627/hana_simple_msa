@@ -13,19 +13,19 @@ import org.springframework.web.bind.annotation.*
 class UserController (
     private val userService: UserService,
 ){
-    @PostMapping("/create/user")
+    @PostMapping("/v1/create/user")
     fun createUser(@RequestBody userCreate: UserCreate): APIResponse<Long> {
         return APIResponse.success(userService.join(userCreate))
     }
 
-    @GetMapping("/user/{userId}")
+    @GetMapping("/v2/user/{userId}")
     fun getUserInformation(
         @PathVariable userId: String
     ): APIResponse<UserInformation> {
         return APIResponse.success(userService.getUserInformation(userId))
     }
 
-    @PatchMapping("/user/{userId}/password")
+    @PatchMapping("/v2/user/{userId}/password")
     fun changeUserPassword(
         @PathVariable userId: String,
         @RequestBody userPasswordChange : UserPasswordChange,
@@ -33,7 +33,7 @@ class UserController (
         return APIResponse.success(userService.changePassword(userId, userPasswordChange))
     }
 
-    @DeleteMapping("/user/{userId}")
+    @DeleteMapping("/v2/user/{userId}")
     fun deleteUser(
         @PathVariable userId: String,
     ): APIResponse<Long> {

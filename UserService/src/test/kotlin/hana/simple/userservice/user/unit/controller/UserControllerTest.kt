@@ -51,7 +51,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            post("/create/user")
+            post("/v1/create/user")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
         )
@@ -75,7 +75,7 @@ class UserControllerTest {
         val json = om.writeValueAsString(userCreate)
 
         // when && then
-        mvc.perform(post("/create/user")
+        mvc.perform(post("/v1/create/user")
             .contentType(MediaType.APPLICATION_JSON)
             .content(json))
             .andExpect(status().isOk)
@@ -95,7 +95,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            get("/user/{userId}", userId))
+            get("/v2/user/{userId}", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.result.userId").value(userInformation.userId))
             .andExpect(jsonPath("$.result.userName").value(userInformation.userName))
@@ -120,7 +120,7 @@ class UserControllerTest {
         val json = om.writeValueAsString(userCreate)
 
         // when && then
-        mvc.perform(post("/create/user")
+        mvc.perform(post("/v1/create/user")
             .contentType(MediaType.APPLICATION_JSON)
             .content(json))
             .andExpect(status().isOk)
@@ -140,7 +140,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            patch("/user/{userId}/password", userId)
+            patch("/v2/user/{userId}/password", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
             .andExpect(status().isOk)
@@ -163,7 +163,7 @@ class UserControllerTest {
         val json = om.writeValueAsString(userPasswordChange)
 
         // when && then
-        mvc.perform(patch("/user/{userId}/password", userId)
+        mvc.perform(patch("/v2/user/{userId}/password", userId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(json))
             .andExpect(status().isOk)
@@ -182,7 +182,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            delete("/user/{userId}", userId)
+            delete("/v2/user/{userId}", userId)
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.result").value(1L))
@@ -203,7 +203,7 @@ class UserControllerTest {
         )
 
         // when && then
-        mvc.perform(delete("/user/{userId}", userId)
+        mvc.perform(delete("/v2/user/{userId}", userId)
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.result").value("회원 정보를 찾을 수 없습니다."))

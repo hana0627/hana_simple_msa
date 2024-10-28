@@ -4,15 +4,20 @@ import hana.simple.userservice.api.user.controller.request.UserCreate
 import hana.simple.userservice.api.user.controller.request.UserLogin
 import hana.simple.userservice.api.user.controller.request.UserPasswordChange
 import hana.simple.userservice.api.user.controller.response.UserInformation
+import hana.simple.userservice.api.user.domain.UserEntity
 import hana.simple.userservice.api.user.service.UserService
+import hana.simple.userservice.global.config.jwt.JwtUtils
 import hana.simple.userservice.global.response.APIResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import lombok.RequiredArgsConstructor
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequiredArgsConstructor
-class UserController (
+class UserController(
     private val userService: UserService,
+    private val jwtUtils: JwtUtils,
 ){
     @PostMapping("/v1/user")
     fun createUser(@RequestBody userCreate: UserCreate): APIResponse<Long> {
@@ -20,8 +25,17 @@ class UserController (
     }
 
     @PostMapping("/v1/user/login")
-    fun login(@RequestBody userLogin: UserLogin): APIResponse<Long> {
-        return APIResponse.success(userService.login(userLogin))
+    fun login(@RequestBody userLogin: UserLogin,
+              request: HttpServletRequest,
+              response: HttpServletResponse
+    ): APIResponse<String> {
+        val userEntity: UserEntity = userService.login(userLogin)
+        val token: String = jwtUtils.generateToken(
+            request = request,
+            response= response,
+            userId = userEntity.userId,
+            userName = userEntity.userName,)
+        return APIResponse.success(token)
     }
 
     @GetMapping("/v2/user/{userId}")

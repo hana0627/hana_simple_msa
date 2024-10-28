@@ -40,10 +40,10 @@ class UserServiceImpl(
         throw RuntimeException()
     }
 
-    override fun login(userLogin: UserLogin): Long {
+    override fun login(userLogin: UserLogin): UserEntity {
         val user: UserEntity = getUserByUserIdOrException(userLogin.userId)
         return if (passwordEncoder.matches(userLogin.password, user.password)) {
-            user.id!!
+            user
         }else {
             throw ApplicationException(ErrorCode.LOGIN_FAIL, "아이디가 없거나 비밀번호가 잘못되었습니다.")
         }

@@ -19,7 +19,6 @@ class TestSecurityConfig {
             }
             .formLogin { form -> form.disable() }
             .httpBasic { b -> b.disable() }
-            //oauth2 로그인
             .build()
     }
 

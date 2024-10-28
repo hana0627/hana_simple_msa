@@ -6,18 +6,22 @@ import hana.simple.userservice.api.user.controller.request.UserCreate
 import hana.simple.userservice.api.user.controller.request.UserLogin
 import hana.simple.userservice.api.user.controller.request.UserPasswordChange
 import hana.simple.userservice.api.user.controller.response.UserInformation
+import hana.simple.userservice.api.user.domain.UserEntity
 import hana.simple.userservice.api.user.service.UserService
+import hana.simple.userservice.global.config.jwt.JwtUtils
 import hana.simple.userservice.global.exception.ApplicationException
 import hana.simple.userservice.global.exception.constant.ErrorCode
+import hana.simple.userservice.user.unit.mock.TestConfig
 import hana.simple.userservice.user.unit.mock.TestSecurityConfig
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.mockito.BDDMockito.then
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
-import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
@@ -27,9 +31,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-@MockBean(JpaMetamodelMappingContext::class) // JPA 불러오기
 @WebMvcTest(UserController::class)
-@Import(TestSecurityConfig::class)
+@AutoConfigureMockMvc(addFilters = false) // 테스트코드에서 필터사용 X
+@Import(TestSecurityConfig::class, TestConfig::class)
 class UserControllerTest {
     @Autowired
     private lateinit var mvc: MockMvc
@@ -40,10 +44,13 @@ class UserControllerTest {
     @MockBean
     private lateinit var userService: UserService
 
-    fun setUp() {
-        val userController = UserController(userService)
-    }
+    @Autowired
+    private lateinit var jwtUtils: JwtUtils
 
+    @BeforeEach
+    fun setUp() {
+        val userController: UserController = UserController(userService, jwtUtils)
+    }
 
     @Test
     fun 회원가입이_정상_동작한다() {
@@ -94,24 +101,25 @@ class UserControllerTest {
     fun 로그인이_성공한다() {
         //given
         val userLogin: UserLogin = UserLogin.fixture(userId = "hanana", password = "rowPassword")
-
+        val userEntity: UserEntity = UserEntity.fixture(userId = "hanana", id=1L)
         val json = om.writeValueAsString(userLogin)
 
-        given(userService.login(userLogin)).willReturn(1L)
+        given(userService.login(userLogin)).willReturn(userEntity)
 
         //when && then
         mvc.perform(post("/v1/user/login")
+            .header("AUTHORIZATION","Bearer safeToken")
             .contentType(MediaType.APPLICATION_JSON)
             .content(json))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.result").value(1L))
+            .andExpect(jsonPath("$.result").value("BEARER jwtToken"))
             .andDo(print())
 
         then(userService).should().login(userLogin)
     }
 
     @Test
-    fun 로그인_실패시_오류룰_전달한다() {
+    fun 로그인_실패시_오류를_전달한다() {
         //given
         val userLogin: UserLogin = UserLogin.fixture(userId = "hanana", password = "rowPassword")
 
@@ -143,7 +151,8 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(
-            get("/v2/user/{userId}", userId))
+            get("/v2/user/{userId}", userId)
+                .header("AUTHORIZATION","Bearer safeToken"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.result.userId").value(userInformation.userId))
             .andExpect(jsonPath("$.result.userName").value(userInformation.userName))
@@ -160,21 +169,18 @@ class UserControllerTest {
     @WithMockUser(username = "hanana")
     fun 없는_회원정보로_조회시_예외가_발생한다() {
         // given
-        val userCreate: UserCreate = UserCreate.fixture(userId = "hanana")
+        val wrongUserId: String = "wrongUser"
 
-        given(userService.join(userCreate)).willThrow(
-            ApplicationException(ErrorCode.DUPLICATE_USER, "이미 사용중인 아이디 입니다.")
+        given(userService.getUserInformation(wrongUserId)).willThrow(
+            ApplicationException(ErrorCode.USER_NOT_FOUND,  "회원 정보를 찾을 수 없습니다.")
         )
 
-        val json = om.writeValueAsString(userCreate)
-
         // when && then
-        mvc.perform(post("/v1/user")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(json))
+        mvc.perform(get("/v2/user/{userId}",wrongUserId)
+            .header("AUTHORIZATION","Bearer safeToken"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.result").value("이미 사용중인 아이디 입니다."))
-            .andExpect(jsonPath("$.resultCode").value(HttpStatus.CONFLICT.name))
+            .andExpect(jsonPath("$.result").value( "회원 정보를 찾을 수 없습니다."))
+            .andExpect(jsonPath("$.resultCode").value(HttpStatus.NOT_FOUND.name))
             .andDo(print())
     }
 
@@ -191,6 +197,7 @@ class UserControllerTest {
         // when && then
         mvc.perform(
             patch("/v2/user/{userId}/password", userId)
+                .header("AUTHORIZATION","Bearer safeToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
             .andExpect(status().isOk)
@@ -215,6 +222,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(patch("/v2/user/{userId}/password", userId)
+            .header("AUTHORIZATION","Bearer safeToken")
             .contentType(MediaType.APPLICATION_JSON)
             .content(json))
             .andExpect(status().isOk)
@@ -235,6 +243,7 @@ class UserControllerTest {
         // when && then
         mvc.perform(
             delete("/v2/user/{userId}", userId)
+                .header("AUTHORIZATION","Bearer safeToken")
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.result").value(1L))
@@ -257,6 +266,7 @@ class UserControllerTest {
 
         // when && then
         mvc.perform(delete("/v2/user/{userId}", userId)
+            .header("AUTHORIZATION","Bearer safeToken")
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.result").value("회원 정보를 찾을 수 없습니다."))

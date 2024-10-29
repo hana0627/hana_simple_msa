@@ -33,3 +33,11 @@ gradlew
 /UserService/*.bat
 /UserService/.gitattributes
 /UserService/gradlew
+
+
+/BoardService/.gradle/
+/BoardService/build/
+/BoardService/gradle/
+/BoardService/*.bat
+/BoardService/.gitattributes
+/BoardService/gradlew

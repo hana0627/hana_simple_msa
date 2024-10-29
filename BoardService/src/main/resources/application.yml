@@ -1,0 +1,33 @@
+server:
+  port: 0 #Random Port 사용
+
+spring:
+  application:
+    name: board-service
+  datasource:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    hikari:
+      driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 200
+
+eureka:
+  instance:
+    #instance id를 지정
+    #hostname:instance_id:random_value
+    instance-id: ${spring.cloud.client.hostname}:${spring.application.instance_id:${random.value}}
+  client:
+    register-with-eureka: true # Eureka서버에 클라이언트로 등록하겠다는 설정
+    fetch-registry: true # Eureka 서버로부터 인스턴트들의 주기적으로 가져오겠다는 설정
+    #서비스 위치를 지정해주는 설정
+    service-url:
+      #아래 경로에 MicroService로 등록
+      defaultZone: http://127.0.0.1:8761/eureka

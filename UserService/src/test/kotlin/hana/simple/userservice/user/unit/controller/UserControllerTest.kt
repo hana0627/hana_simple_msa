@@ -12,7 +12,8 @@ import hana.simple.userservice.global.config.jwt.JwtUtils
 import hana.simple.userservice.global.exception.ApplicationException
 import hana.simple.userservice.global.exception.constant.ErrorCode
 import hana.simple.userservice.user.unit.mock.TestConfig
-import hana.simple.userservice.user.unit.mock.TestSecurityConfig
+//import hana.simple.userservice.user.unit.mock.TestConfig
+//import hana.simple.userservice.user.unit.mock.TestSecurityConfig
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
@@ -24,7 +25,6 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
@@ -32,8 +32,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(UserController::class)
-@AutoConfigureMockMvc(addFilters = false) // 테스트코드에서 필터사용 X
-@Import(TestSecurityConfig::class, TestConfig::class)
+//@AutoConfigureMockMvc(addFilters = false) // 테스트코드에서 필터사용 X
+@Import(TestConfig::class)
 class UserControllerTest {
     @Autowired
     private lateinit var mvc: MockMvc
@@ -142,7 +142,6 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "hanana")
     fun 회원정보_조회가_제대로_이루어진다() {
         // given
         val userId = "hanana"
@@ -166,7 +165,6 @@ class UserControllerTest {
 
 
     @Test
-    @WithMockUser(username = "hanana")
     fun 없는_회원정보로_조회시_예외가_발생한다() {
         // given
         val wrongUserId: String = "wrongUser"
@@ -185,7 +183,6 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "hanana")
     fun 패스워드_변경이_정상적으로_이루어진다() {
         // given
         val userId = "hanana"
@@ -208,7 +205,6 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "hanana")
     fun 없는_유저정보로_패스워드_변경을_시도하면_예외가_발생한다() {
         // given
         val userId:String = "wrongUser"
@@ -232,7 +228,6 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "hanana")
     fun 유저_삭제가_정상적으로_이루어진다() {
         //given
         val userId: String = "hanana"
@@ -255,7 +250,6 @@ class UserControllerTest {
 
 
     @Test
-    @WithMockUser(username = "hanana")
     fun 없는_유저에_대한_삭제를_시도하면_예외가_발생한다() {
         // given
         val userId:String = "wrongUser"

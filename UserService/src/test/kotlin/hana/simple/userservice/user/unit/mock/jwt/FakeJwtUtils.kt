@@ -20,22 +20,4 @@ class FakeJwtUtils() : JwtUtils {
     ): String {
         return "BEARER jwtToken"
     }
-
-    override fun isExpired(token: String): Boolean {
-        return false
-    }
-
-    override fun getUserId(token: String): String {
-        return "hanana"
-    }
-
-    override fun isInValidated(token: String): Boolean {
-        return false
-    }
-
-    override fun logout(request: HttpServletRequest, userId: String): Boolean {
-        return true
-    }
-
-
 }

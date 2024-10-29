@@ -16,6 +16,20 @@ spring:
         - id: user-service
           uri: lb://user-service #등록된 MicroService 이름
           predicates: # 조건절과 같은 의미
-            - Path=/user-service/** #Path 정보를 지정
+            - Path=/user-service/v2/** #Path 정보를 지정
           filters:
             - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+            - name: AuthorizationHeaderFilter
+
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/v1/**
+          filters:
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+
+jwt:
+  secret-key: ${SECRET_KEY}
+  #30min
+  token.expired-time-ms: 1800
+  refresh.expired-time-ms: 4000

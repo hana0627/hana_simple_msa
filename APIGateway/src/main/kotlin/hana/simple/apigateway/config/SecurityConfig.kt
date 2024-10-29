@@ -30,6 +30,8 @@ class SecurityConfig(
                     .pathMatchers("user-service/hello").permitAll()
                     .pathMatchers("/user-service/v1/**").permitAll()
                     .pathMatchers("/user-service/v2/**").authenticated()
+                    .pathMatchers("/board-service/v1/**").permitAll()
+                    .pathMatchers("/board-service/v2/**").authenticated()
             }
             .formLogin { form -> form.disable() }
             .httpBasic { basic -> basic.disable() }

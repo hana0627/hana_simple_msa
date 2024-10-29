@@ -28,6 +28,21 @@ spring:
           filters:
             - RewritePath=/user-service/(?<segment>.*), /$\{segment}
 
+        - id: board-service
+          uri: lb://board-service #등록된 MicroService 이름
+          predicates: # 조건절과 같은 의미
+            - Path=/board-service/v2/** #Path 정보를 지정
+          filters:
+            - RewritePath=/board-service/(?<segment>.*), /$\{segment}
+            - name: AuthorizationHeaderFilter
+
+        - id: board-service
+          uri: lb://BOARD-SERVICE
+          predicates:
+            - Path=/board-service/v1/**
+          filters:
+            - RewritePath=/board-service/(?<segment>.*), /$\{segment}
+
 jwt:
   secret-key: ${SECRET_KEY}
   #30min

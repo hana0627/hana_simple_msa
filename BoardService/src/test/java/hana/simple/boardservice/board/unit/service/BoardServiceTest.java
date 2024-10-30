@@ -87,7 +87,7 @@ public class BoardServiceTest {
     @Test
     void 올바른_정보_입력시_글작성에_성공한다() {
         //given
-        BoardCreate boardCreate = new BoardCreate("hanana","title","conetent");
+        BoardCreate boardCreate = new BoardCreate("hanana", "title", "conetent");
         BoardEntity board = BoardEntity.from(1L, "title", "hanana", Collections.emptyList(), "hanana");
 
 
@@ -125,7 +125,7 @@ public class BoardServiceTest {
         //given
         BoardUpdate boardUpdate = new BoardUpdate("hanana",9999L,"updateTile","updateContent");
         BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
-        given(boardRepository.findById(boardUpdate.boardId())).willThrow(new RuntimeException());
+        given(boardRepository.findById(boardUpdate.boardId())).willReturn(null);
 
 
         //when && then

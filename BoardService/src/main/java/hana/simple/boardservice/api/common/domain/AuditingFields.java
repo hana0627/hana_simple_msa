@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 
 @EntityListeners(AuditingEntityListener.class) // Entity 영속, 수정 이벤트 감지
 @MappedSuperclass // 상속 및 공통필드 생성.
+@Getter
 abstract public class AuditingFields {
     @CreatedDate
     @Column(updatable = false)

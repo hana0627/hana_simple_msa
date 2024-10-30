@@ -3,16 +3,13 @@ package hana.simple.boardservice.api.board.controller;
 import hana.simple.boardservice.api.board.controller.request.BoardCreate;
 import hana.simple.boardservice.api.board.controller.request.BoardUpdate;
 import hana.simple.boardservice.api.board.controller.response.BoardInformation;
-import hana.simple.boardservice.api.board.domain.BoardEntity;
 import hana.simple.boardservice.api.board.service.BoardService;
+import hana.simple.boardservice.global.response.APIResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,52 +18,36 @@ public class BoardController {
     private final BoardService boardService;
 
     @GetMapping("/v2/board")
-    public Map<String, Object> boards() {
-        List<BoardInformation> result = boardService.getAllBoards();
-        Map<String,Object> resultMap = new HashMap<>();
-        resultMap.put("result",result);
-        return resultMap;
+    public APIResponse<List<BoardInformation>> boards() {
+        return APIResponse.success(boardService.getAllBoards());
     }
 
     @GetMapping("/v2/board/{boardId}")
-    public Map<String, Object> boardInfomation(
+    public APIResponse<BoardInformation> boardInfomation(
             @PathVariable Long boardId
     ) {
-        BoardInformation result = boardService.getBoard(boardId);
-
-        Map<String,Object> resultMap = new HashMap<>();
-        resultMap.put("result",result);
-        return resultMap;
+        return APIResponse.success(boardService.getBoard(boardId));
     }
 
     @PostMapping("/v2/board")
-    public Map<String, Object> boardCrete(
+    public APIResponse<Long> boardCrete(
         @RequestBody BoardCreate boardCreate
     ) {
-        Long result = boardService.create(boardCreate);
-        Map<String,Object> resultMap = new HashMap<>();
-        resultMap.put("result",result);
-        return resultMap;
+        return APIResponse.success(boardService.create(boardCreate));
     }
 
     @PatchMapping("/v2/board")
-    public Map<String, Object> boardUpdate(
+    public APIResponse<Long> boardUpdate(
             @RequestBody BoardUpdate boardUpdate
     ) {
-        Long result = boardService.update(boardUpdate);
-        Map<String,Object> resultMap = new HashMap<>();
-        resultMap.put("result",result);
-        return resultMap;
+        return APIResponse.success(boardService.update(boardUpdate));
     }
 
     @DeleteMapping("/v2/board/{boardId}")
-    public Map<String, Object> boardUpdate(
+    public APIResponse<Long> boardUpdate(
             @PathVariable Long boardId
     ) {
-        Long result = boardService.delete(boardId);
-        Map<String,Object> resultMap = new HashMap<>();
-        resultMap.put("result",result);
-        return resultMap;
+        return APIResponse.success(boardService.delete(boardId));
     }
 
 }

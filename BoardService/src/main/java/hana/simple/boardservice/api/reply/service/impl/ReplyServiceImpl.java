@@ -9,6 +9,8 @@ import hana.simple.boardservice.api.reply.domain.ReplyEntity;
 import hana.simple.boardservice.api.reply.repository.ReplyMapper;
 import hana.simple.boardservice.api.reply.repository.ReplyRepository;
 import hana.simple.boardservice.api.reply.service.ReplyService;
+import hana.simple.boardservice.global.exception.ApplicationException;
+import hana.simple.boardservice.global.exception.constant.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -76,16 +78,16 @@ public class ReplyServiceImpl implements ReplyService {
         if(boardRepository.findById(boardId).isPresent()) {
             return true;
         }else {
-            throw new RuntimeException();
+            throw new ApplicationException(ErrorCode.BOARD_NOT_FOUND,"게시글이 존재하지 않습니다.");
         }
     }
 
     private ReplyEntity getReplyOrExceptionById(Long replyId) {
-        return replyRepository.findById(replyId).orElseThrow(RuntimeException::new);
+        return replyRepository.findById(replyId).orElseThrow(() -> new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
     }
 
     private BoardEntity getBoardOrExceptionByBoardId(Long boardId) {
-        return boardRepository.findById(boardId).orElseThrow(RuntimeException::new);
+        return boardRepository.findById(boardId).orElseThrow(() -> new ApplicationException(ErrorCode.BOARD_NOT_FOUND,"게시글이 존재하지 않습니다."));
     }
 
     private Integer getMaxSequence(Long boardId) {

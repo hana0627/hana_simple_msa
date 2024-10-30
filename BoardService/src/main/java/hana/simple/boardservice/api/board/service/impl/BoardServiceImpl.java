@@ -7,6 +7,8 @@ import hana.simple.boardservice.api.board.domain.BoardEntity;
 import hana.simple.boardservice.api.board.domain.BoardMapper;
 import hana.simple.boardservice.api.board.repository.BoardRepository;
 import hana.simple.boardservice.api.board.service.BoardService;
+import hana.simple.boardservice.global.exception.ApplicationException;
+import hana.simple.boardservice.global.exception.constant.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -74,6 +76,6 @@ public class BoardServiceImpl implements BoardService {
 
 
     private BoardEntity getOrExceptionById(Long id) {
-        return boardRepository.findById(id).orElseThrow(RuntimeException::new);
+        return boardRepository.findById(id).orElseThrow(() -> new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
     }
 }

@@ -6,6 +6,8 @@ import hana.simple.boardservice.api.board.controller.response.BoardInformation;
 import hana.simple.boardservice.api.board.domain.BoardEntity;
 import hana.simple.boardservice.api.board.repository.BoardRepository;
 import hana.simple.boardservice.api.board.service.impl.BoardServiceImpl;
+import hana.simple.boardservice.global.exception.ApplicationException;
+import hana.simple.boardservice.global.exception.constant.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -78,10 +80,13 @@ public class BoardServiceTest {
     void 글_1건_조회시_없는_boardId를_사용하면_예외가_발생한다() {
         //given
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", Collections.emptyList(), "hanana");
-        given(boardRepository.findById(9999L)).willThrow(new RuntimeException());
+        given(boardRepository.findById(9999L)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
 
         //when & then
-        assertThrows(RuntimeException.class, () -> boardService.getBoard(9999L));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.getBoard(9999L));
+
+
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
     }
 
     @Test
@@ -125,11 +130,13 @@ public class BoardServiceTest {
         //given
         BoardUpdate boardUpdate = new BoardUpdate("hanana",9999L,"updateTile","updateContent");
         BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
-        given(boardRepository.findById(boardUpdate.boardId())).willReturn(null);
+        given(boardRepository.findById(boardUpdate.boardId())).willReturn(Optional.empty());
 
 
         //when && then
-        assertThrows(RuntimeException.class, () -> boardService.update(boardUpdate));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.update(boardUpdate));
+
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
     }
 
     @Test
@@ -155,11 +162,13 @@ public class BoardServiceTest {
     void 없는_게시글에_대한_삭제요청시_에러가_발생한다() {
         //given
         BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
-        given(boardRepository.findById(9999L)).willThrow(new RuntimeException());
+        given(boardRepository.findById(9999L)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
 
 
         //when && then
-        assertThrows(RuntimeException.class, () -> boardService.delete(9999L));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.delete(9999L));
+
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
     }
 
 }

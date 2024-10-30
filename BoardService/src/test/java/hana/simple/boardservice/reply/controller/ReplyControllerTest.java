@@ -8,10 +8,13 @@ import hana.simple.boardservice.api.reply.controller.request.ReplyUpdate;
 import hana.simple.boardservice.api.reply.controller.response.ReplyInformation;
 import hana.simple.boardservice.api.reply.domain.ReplyEntity;
 import hana.simple.boardservice.api.reply.service.ReplyService;
+import hana.simple.boardservice.global.exception.ApplicationException;
+import hana.simple.boardservice.global.exception.constant.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -92,10 +95,22 @@ public class ReplyControllerTest {
 
     @Test
     void 없는_게시글에_댓글_요청시_예외가_발생한다() throws Exception {
-        //TODO 예외객체 생성 후 재작성
         //given
+        ReplyCreate replyCreate = new ReplyCreate("hanana",1L,"content");
+
+        given(replyService.create(replyCreate)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+
+        String json = om.writeValueAsString(replyCreate);
 
         //when && then
+        mvc.perform(post("/v2/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("게시글이 존재하지 않습니다."))
+                .andExpect(jsonPath("$.resultCode").value(HttpStatus.NOT_FOUND.name()))
+                .andDo(print());
+
     }
 
     @Test
@@ -119,18 +134,40 @@ public class ReplyControllerTest {
 
     @Test
     void 없는_게시글에_대한_댓글_수정요청시_에러가_발생한다() throws Exception {
-        //TODO 예외객체 생성 후 재작성
         //given
+        ReplyUpdate replyUpdate = new ReplyUpdate("hanana",1L,1L, "updateContent");
+
+        given(replyService.update(replyUpdate)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+
+        String json = om.writeValueAsString(replyUpdate);
 
         //when && then
+        mvc.perform(patch("/v2/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("게시글이 존재하지 않습니다."))
+                .andExpect(jsonPath("$.resultCode").value(HttpStatus.NOT_FOUND.name()))
+                .andDo(print());
     }
 
     @Test
     void 없는_댓글에_대한_댓글_수정요청시_에러가_발생한다() throws Exception {
-        //TODO 예외객체 생성 후 재작성
         //given
+        ReplyUpdate replyUpdate = new ReplyUpdate("hanana",1L,1L, "updateContent");
+
+        given(replyService.update(replyUpdate)).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
+
+        String json = om.writeValueAsString(replyUpdate);
 
         //when && then
+        mvc.perform(patch("/v2/reply")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("댓글이 존재하지 않습니다."))
+                .andExpect(jsonPath("$.resultCode").value(HttpStatus.NOT_FOUND.name()))
+                .andDo(print());
     }
 
     @Test
@@ -150,10 +187,18 @@ public class ReplyControllerTest {
 
     @Test
     void 없는_댓글에_대한_댓글_삭제요청시_에러가_발생한다() throws Exception {
-        //TODO 예외객체 생성 후 재작성
         //given
+        BoardEntity board = BoardEntity.from(1L, "title1", "content1", Collections.emptyList(), "hanana");
+        ReplyEntity reply = ReplyEntity.from(board, "reply1", "danbi", 1L, 1);
+
+        given(replyService.delete(reply.getId())).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
 
         //when && then
+        mvc.perform(delete("/v2/reply/{replyId}",reply.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("댓글이 존재하지 않습니다."))
+                .andExpect(jsonPath("$.resultCode").value(HttpStatus.NOT_FOUND.name()))
+                .andDo(print());
     }
 
 }

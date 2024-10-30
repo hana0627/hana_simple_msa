@@ -23,7 +23,7 @@ public class BoardController {
     }
 
     @GetMapping("/v2/board/{boardId}")
-    public APIResponse<BoardInformation> boardInfomation(
+    public APIResponse<BoardInformation> boardInfomation (
             @PathVariable Long boardId
     ) {
         return APIResponse.success(boardService.getBoard(boardId));

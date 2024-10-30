@@ -9,6 +9,8 @@ import hana.simple.boardservice.api.reply.domain.ReplyEntity;
 import hana.simple.boardservice.api.reply.repository.ReplyMapper;
 import hana.simple.boardservice.api.reply.repository.ReplyRepository;
 import hana.simple.boardservice.api.reply.service.impl.ReplyServiceImpl;
+import hana.simple.boardservice.global.exception.ApplicationException;
+import hana.simple.boardservice.global.exception.constant.ErrorCode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,10 +102,12 @@ public class ReplyServiceTest {
         //given
         ReplyCreate replyCreate = new ReplyCreate("hanana", 9999L, "replyContent");
 
-        given(boardRepository.findById(replyCreate.boardId())).willThrow(new RuntimeException());
+        given(boardRepository.findById(replyCreate.boardId())).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
 
         //when && then
-        assertThrows(RuntimeException.class, () -> replyService.create(replyCreate));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.create(replyCreate));
+
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
     }
 
 
@@ -134,12 +138,13 @@ public class ReplyServiceTest {
         //given
         ReplyUpdate replyUpdate = new ReplyUpdate("hanana", 1L,9999L, "replyContent");
 
-        given(boardRepository.findById(replyUpdate.boardId())).willThrow(new RuntimeException());
+        given(boardRepository.findById(replyUpdate.boardId())).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
 
         //when && then
-        assertThrows(RuntimeException.class, () -> replyService.update(replyUpdate));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.update(replyUpdate));
 
         then(boardRepository).should().findById(replyUpdate.boardId());
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
 
     }
     
@@ -150,14 +155,14 @@ public class ReplyServiceTest {
         ReplyUpdate replyUpdate = new ReplyUpdate("hanana", 9999L,1L, "replyContent");
 
         given(boardRepository.findById(replyUpdate.boardId())).willReturn(Optional.of(board));
-        given(replyRepository.findById(replyUpdate.replyId())).willThrow(new RuntimeException());
+        given(replyRepository.findById(replyUpdate.replyId())).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
 
         //when && then
-        assertThrows(RuntimeException.class, () -> replyService.update(replyUpdate));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.update(replyUpdate));
 
         then(boardRepository).should().findById(replyUpdate.boardId());
         then(replyRepository).should().findById(replyUpdate.replyId());
-
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.REPLY_NOT_FOUND);
     }
 
     @Test
@@ -185,11 +190,12 @@ public class ReplyServiceTest {
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", new ArrayList<>(), "hanana");
         ReplyEntity reply = ReplyEntity.from(board, "replyContent", "hanana", 1L, 1);
 
-        given(replyRepository.findById(9999L)).willThrow(new RuntimeException());
+        given(replyRepository.findById(9999L)).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
 
 
         //when && then
-        assertThrows(RuntimeException.class, () -> replyService.delete(9999L));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.delete(9999L));
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.REPLY_NOT_FOUND);
     }
 
 }

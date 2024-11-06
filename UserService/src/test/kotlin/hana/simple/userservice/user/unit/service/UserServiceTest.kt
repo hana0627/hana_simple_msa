@@ -5,6 +5,7 @@ import hana.simple.userservice.api.user.controller.request.UserLogin
 import hana.simple.userservice.api.user.controller.request.UserPasswordChange
 import hana.simple.userservice.api.user.controller.response.UserInformation
 import hana.simple.userservice.api.user.domain.UserEntity
+import hana.simple.userservice.api.user.repository.UserCacheRepository
 import hana.simple.userservice.api.user.repository.UserRepository
 import hana.simple.userservice.api.user.service.UserService
 import hana.simple.userservice.api.user.service.impl.UserServiceImpl
@@ -23,11 +24,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 @ExtendWith(MockitoExtension::class)
 class UserServiceTest (
     @Mock private val userRepository: UserRepository,
+    @Mock private val userCacheRepository: UserCacheRepository,
     @Mock private val passwordEncoder: CustomPasswordEncoder,
 ){
 
     @InjectMocks
-    private val userService: UserService = UserServiceImpl(userRepository, passwordEncoder)
+    private val userService: UserService = UserServiceImpl(userRepository, userCacheRepository, passwordEncoder)
 
 
     @Test
@@ -48,6 +50,7 @@ class UserServiceTest (
         then(passwordEncoder).should().encode(dto.password)
         then(userRepository).should().findByUserId(dto.userId)
         then(userRepository).should().save(userEntity)
+        then(userCacheRepository).should().setUser(userEntity)
 
         assertThat(result).isEqualTo(1L)
     }
@@ -74,10 +77,30 @@ class UserServiceTest (
     }
 
     @Test
-    fun 올바른_아이디_패스워드_입력시_로그인이_성공한다() {
+    fun 올바른_아이디_패스워드_입력시_로그인이_성공한다_캐싱성공() {
         //given
         val dto: UserLogin = UserLogin.fixture(userId = "hanana", password = "rowPassword")
         val user: UserEntity = UserEntity.fixture(userId = "hanana", id= 1L)
+        given(userCacheRepository.findByUserId(dto.userId)).willReturn(user)
+        given(passwordEncoder.matches(dto.password, user.password)).willReturn(true)
+
+        //when
+        val result = userService.login(dto)
+
+       //then
+        then(userCacheRepository).should().findByUserId(dto.userId)
+        // 캐싱에 성공하면 Repository 조회를 하지 않는다.
+        then(userRepository).should(times(0)).findByUserId(dto.userId)
+        then(passwordEncoder).should().matches(dto.password, user.password)
+        then(userCacheRepository).should().setUser(user)
+    }
+
+    @Test
+    fun 올바른_아이디_패스워드_입력시_로그인이_성공한다_캐싱실패() {
+        //given
+        val dto: UserLogin = UserLogin.fixture(userId = "hanana", password = "rowPassword")
+        val user: UserEntity = UserEntity.fixture(userId = "hanana", id= 1L)
+        given(userCacheRepository.findByUserId(dto.userId)).willReturn(null)
         given(userRepository.findByUserId(dto.userId)).willReturn(user)
         given(passwordEncoder.matches(dto.password, user.password)).willReturn(true)
 
@@ -85,8 +108,10 @@ class UserServiceTest (
         val result = userService.login(dto)
 
         //then
+        then(userCacheRepository).should().findByUserId(dto.userId)
         then(userRepository).should().findByUserId(dto.userId)
         then(passwordEncoder).should().matches(dto.password, user.password)
+        then(userCacheRepository).should().setUser(user)
     }
 
     @Test
@@ -94,15 +119,16 @@ class UserServiceTest (
         //given
         val dto: UserLogin = UserLogin.fixture(userId = "wrongId", password = "rowPassword")
         val user: UserEntity = UserEntity.fixture(userId = "hanana", id= 1L)
-        given(userRepository.findByUserId(dto.userId)).willThrow(
-            ApplicationException(ErrorCode.LOGIN_FAIL, "아이디가 없거나 비밀번호가 잘못되었습니다.")
-        )
+        given(userCacheRepository.findByUserId(dto.userId)).willReturn(null)
+        given(userRepository.findByUserId(dto.userId)).willReturn(null)
 
         //when
         val result = assertThrows<ApplicationException> { userService.login(dto) }
 
         //then
         then(userRepository).should().findByUserId(dto.userId)
+        then(userCacheRepository).should().findByUserId(dto.userId)
+        then(userCacheRepository).should(times(0)).setUser(user)
         then(passwordEncoder).should(times(0)).matches(dto.password, user.password)
 
         assertThat(result.message).isEqualTo("아이디가 없거나 비밀번호가 잘못되었습니다.")
@@ -115,14 +141,16 @@ class UserServiceTest (
         //given
         val dto: UserLogin = UserLogin.fixture(userId = "hanana", password = "wrongPassword")
         val user: UserEntity = UserEntity.fixture(userId = "hanana", id= 1L)
-        given(userRepository.findByUserId(dto.userId)).willReturn(user)
+        given(userCacheRepository.findByUserId(dto.userId)).willReturn(user)
+//        given(userRepository.findByUserId(dto.userId)).willReturn(user)
         given(passwordEncoder.matches(dto.password, user.password)).willReturn(false)
 
         //when
         val result = assertThrows<ApplicationException> { userService.login(dto) }
 
         //then
-        then(userRepository).should().findByUserId(dto.userId)
+        then(userCacheRepository).should().findByUserId(dto.userId)
+//        then(userRepository).should().findByUserId(dto.userId)
         then(passwordEncoder).should().matches(dto.password, user.password)
 
         assertThat(result.message).isEqualTo("아이디가 없거나 비밀번호가 잘못되었습니다.")
@@ -132,17 +160,40 @@ class UserServiceTest (
 
 
     @Test
-    fun 회원정보_조회가_제대로_이루어진다() {
+    fun 회원정보_조회가_제대로_이루어진다_캐싱성공() {
         //given
         val dto: UserInformation = UserInformation.fixture()
         val userEntity: UserEntity = UserEntity.fixture(userId = "hanana")
 
+        given(userCacheRepository.findByUserId(dto.userId)).willReturn(userEntity)
+
+        //when
+        val result: UserInformation = userService.getUserInformation(dto.userId)
+
+        //then
+        then(userCacheRepository).should().findByUserId(dto.userId)
+        then(userRepository).should(times(0)).findByUserId(dto.userId)
+
+        assertThat(result.userId).isEqualTo(userEntity.userId)
+        assertThat(result.userName).isEqualTo(userEntity.userName)
+        assertThat(result.phoneNumber).isEqualTo(userEntity.phoneNumber)
+        assertThat(result.gender).isEqualTo(userEntity.gender)
+    }
+
+    @Test
+    fun 회원정보_조회가_제대로_이루어진다_캐싱실패() {
+        //given
+        val dto: UserInformation = UserInformation.fixture()
+        val userEntity: UserEntity = UserEntity.fixture(userId = "hanana")
+
+        given(userCacheRepository.findByUserId(dto.userId)).willReturn(null)
         given(userRepository.findByUserId(dto.userId)).willReturn(userEntity)
 
         //when
         val result: UserInformation = userService.getUserInformation(dto.userId)
 
         //then
+        then(userCacheRepository).should().findByUserId(dto.userId)
         then(userRepository).should().findByUserId(dto.userId)
 
         assertThat(result.userId).isEqualTo(userEntity.userId)
@@ -157,12 +208,14 @@ class UserServiceTest (
         val dto: UserInformation = UserInformation.fixture()
         val userEntity: UserEntity = UserEntity.fixture(userId = "hanana")
 
+        given(userCacheRepository.findByUserId("wrongUser")).willReturn(null)
         given(userRepository.findByUserId("wrongUser")).willReturn(null)
 
         //when
         val result = assertThrows<ApplicationException> {userService.getUserInformation("wrongUser")}
 
         //then
+        then(userCacheRepository).should().findByUserId("wrongUser")
         then(userRepository).should().findByUserId("wrongUser")
 
         assertThat(result.message).isEqualTo("회원 정보를 찾을 수 없습니다.")
@@ -171,7 +224,7 @@ class UserServiceTest (
     }
 
     @Test
-    fun 패스워드_변경이_정상적으로_이루어진다() {
+    fun 패스워드_변경이_정상적으로_이루어진다_캐싱성공() {
         // given
         val userId = "hanana"
         val userPasswordChange: UserPasswordChange =
@@ -190,6 +243,45 @@ class UserServiceTest (
         // Stubbing with exact values
         given(passwordEncoder.matches(userPasswordChange.currentPassword, userEntity.password)).willReturn(true)
         given(passwordEncoder.encode(userPasswordChange.newPassword)).willReturn("NewEncryptedPassword")
+        given(userCacheRepository.findByUserId(userId)).willReturn(userEntity)
+        given(userRepository.save(userEntity)).willReturn(userEntity)
+
+        // when
+        val result: Long = userService.changePassword(userId, userPasswordChange)
+
+        // then
+        then(passwordEncoder).should().matches(any(), any())
+        then(passwordEncoder).should().encode(userPasswordChange.newPassword)
+
+        then(userCacheRepository).should().findByUserId(userId)
+        then(userRepository).should(times(0)).findByUserId(userId)
+        then(userRepository).should().save(userEntity)
+
+        // Assert password change
+        assertThat(userEntity.password).isEqualTo("NewEncryptedPassword")
+    }
+
+    @Test
+    fun 패스워드_변경이_정상적으로_이루어진다_캐싱실패() {
+        // given
+        val userId = "hanana"
+        val userPasswordChange: UserPasswordChange =
+            UserPasswordChange.fixture(
+                newPassword = "RowPassword",
+                confirmPassword = "RowPassword",
+                currentPassword = "EncryptedPassword",
+                userId = "hanana"
+            )
+        val userEntity: UserEntity = UserEntity.fixture(
+            id = 1L,
+            userId = "hanana",
+            password = "EncryptedPassword"
+        )
+
+        // Stubbing with exact values
+        given(passwordEncoder.matches(userPasswordChange.currentPassword, userEntity.password)).willReturn(true)
+        given(passwordEncoder.encode(userPasswordChange.newPassword)).willReturn("NewEncryptedPassword")
+        given(userCacheRepository.findByUserId(userId)).willReturn(null)
         given(userRepository.findByUserId(userId)).willReturn(userEntity)
         given(userRepository.save(userEntity)).willReturn(userEntity)
 
@@ -200,6 +292,7 @@ class UserServiceTest (
         then(passwordEncoder).should().matches(any(), any())
         then(passwordEncoder).should().encode(userPasswordChange.newPassword)
 
+        then(userCacheRepository).should().findByUserId(userId)
         then(userRepository).should().findByUserId(userId)
         then(userRepository).should().save(userEntity)
 
@@ -214,12 +307,15 @@ class UserServiceTest (
         val userPasswordChange: UserPasswordChange = UserPasswordChange.fixture(userId = "hanana")
         val userEntity: UserEntity = UserEntity.fixture(userId = "hanana", password = "password")
 
+        given(userCacheRepository.findByUserId("wrongUser")).willReturn(null)
         given(userRepository.findByUserId("wrongUser")).willReturn(null)
 
         //when & then
-        val result = assertThrows<ApplicationException> { userService.changePassword(userId, userPasswordChange)}
+        val result = assertThrows<ApplicationException> { userService.changePassword("wrongUser", userPasswordChange)}
         then(passwordEncoder).should(times(0)).encode(any())
         then(passwordEncoder).should(times(0)).matches(any(),any())
+        then(userCacheRepository).should().findByUserId("wrongUser")
+        then(userRepository).should().findByUserId("wrongUser")
         then(userRepository).should(times(0)).save(any())
 
         assertThat(result.message).isEqualTo("회원 정보를 찾을 수 없습니다.")
@@ -229,17 +325,39 @@ class UserServiceTest (
 
 
     @Test
-    fun 유저_삭제가_정상적으로_이루어진다() {
+    fun 유저_삭제가_정상적으로_이루어진다_캐싱성공() {
         //given
         val userId: String = "hanana"
         val userEntity: UserEntity = UserEntity.fixture(id = 1L, userId = "hanana")
 
+        given(userCacheRepository.findByUserId(userId)).willReturn(userEntity)
+
+        //when
+        val result: Long = userService.deleteUser(userId)
+
+        //then
+        then(userCacheRepository).should().findByUserId(userId)
+        then(userRepository).should(times(0)).findByUserId(userId)
+        then(userRepository).should().delete(userEntity)
+
+        assertThat(result).isEqualTo(userEntity.id)
+    }
+
+
+    @Test
+    fun 유저_삭제가_정상적으로_이루어진다_캐싱실패() {
+        //given
+        val userId: String = "hanana"
+        val userEntity: UserEntity = UserEntity.fixture(id = 1L, userId = "hanana")
+
+        given(userCacheRepository.findByUserId(userId)).willReturn(null)
         given(userRepository.findByUserId(userId)).willReturn(userEntity)
 
         //when
         val result: Long = userService.deleteUser(userId)
 
         //then
+        then(userCacheRepository).should().findByUserId(userId)
         then(userRepository).should().findByUserId(userId)
         then(userRepository).should().delete(userEntity)
 
@@ -252,11 +370,13 @@ class UserServiceTest (
         val userId: String = "wrongUser"
         val userEntity: UserEntity = UserEntity.fixture(id = 1L, userId = "hanana")
 
+        given(userCacheRepository.findByUserId(userId)).willReturn(null)
         given(userRepository.findByUserId(userId)).willReturn(null)
 
         //when & then
         val result = assertThrows<ApplicationException> { userService.deleteUser(userId) }
 
+        then(userCacheRepository).should().findByUserId(userId)
         then(userRepository).should().findByUserId(userId)
         then(userRepository).should(times(0)).delete(any())
         

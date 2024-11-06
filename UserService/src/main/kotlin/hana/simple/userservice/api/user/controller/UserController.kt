@@ -33,8 +33,7 @@ class UserController(
         val token: String = jwtUtils.generateToken(
             request = request,
             response= response,
-            userId = userEntity.userId,
-            userName = userEntity.userName,)
+            userEntity = userEntity)
         return APIResponse.success(token)
     }
 

@@ -38,6 +38,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       discovery-service:
         condition: service_healthy
     environment:
@@ -95,6 +97,18 @@ services:
       - hana-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    container_name: redis
+    image: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - hana-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       retries: 10
 

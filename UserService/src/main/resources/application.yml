@@ -1,5 +1,5 @@
 server:
-  port: 0 #Random Port 사용
+  port: 8080
 
 spring:
   application:
@@ -30,7 +30,7 @@ eureka:
     #서비스 위치를 지정해주는 설정
     service-url:
       #아래 경로에 MicroService로 등록
-      defaultZone: http://127.0.0.1:8761/eureka
+      defaultZone: http://discovery-service:8761/eureka
 
 jwt:
   secret-key: ${SECRET_KEY}

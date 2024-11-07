@@ -76,14 +76,16 @@ public class ReplyControllerTest {
     @Test
     void 댓글_작성이_성공한다() throws Exception {
         //given
-        ReplyCreate replyCreate = new ReplyCreate("hanana",1L,"content");
+        String userId = "hanana";
+        ReplyCreate replyCreate = new ReplyCreate(1L,"content");
 
-        given(replyService.create(replyCreate)).willReturn(1L);
+        given(replyService.create(userId, replyCreate)).willReturn(1L);
 
         String json = om.writeValueAsString(replyCreate);
 
         //when && then
         mvc.perform(post("/v2/reply")
+                        .header("userId",userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -96,14 +98,16 @@ public class ReplyControllerTest {
     @Test
     void 없는_게시글에_댓글_요청시_예외가_발생한다() throws Exception {
         //given
-        ReplyCreate replyCreate = new ReplyCreate("hanana",1L,"content");
+        String userId = "hanana";
+        ReplyCreate replyCreate = new ReplyCreate(1L,"content");
 
-        given(replyService.create(replyCreate)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+        given(replyService.create(userId, replyCreate)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
 
         String json = om.writeValueAsString(replyCreate);
 
         //when && then
         mvc.perform(post("/v2/reply")
+                        .header("userId",userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -116,14 +120,16 @@ public class ReplyControllerTest {
     @Test
     void 게시글_수정이_성공한다() throws Exception {
         //given
-        ReplyUpdate replyUpdate = new ReplyUpdate("hanana",1L,1L, "updateContent");
+        String userId = "hanana";
+        ReplyUpdate replyUpdate = new ReplyUpdate(1L,1L, "updateContent");
 
-        given(replyService.update(replyUpdate)).willReturn(1L);
+        given(replyService.update(userId, replyUpdate)).willReturn(1L);
 
         String json = om.writeValueAsString(replyUpdate);
 
         //when && then
         mvc.perform(patch("/v2/reply")
+                        .header("userId",userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -132,17 +138,42 @@ public class ReplyControllerTest {
 
     }
 
-    @Test
-    void 없는_게시글에_대한_댓글_수정요청시_에러가_발생한다() throws Exception {
-        //given
-        ReplyUpdate replyUpdate = new ReplyUpdate("hanana",1L,1L, "updateContent");
 
-        given(replyService.update(replyUpdate)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+    @Test
+    void 자신이_작성하지_않은_댓글_수정요청시_에러가_발생한다() throws Exception {
+        //given
+        String userId = "wrongUser";
+        ReplyUpdate replyUpdate = new ReplyUpdate(1L,1L, "updateContent");
+
+        given(replyService.update(userId, replyUpdate)).willThrow(new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 댓글만 수정 가능합니다."));
 
         String json = om.writeValueAsString(replyUpdate);
 
         //when && then
         mvc.perform(patch("/v2/reply")
+                        .header("userId",userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("본인이 작성한 댓글만 수정 가능합니다."))
+                .andExpect(jsonPath("$.resultCode").value(HttpStatus.CONFLICT.name()))
+                .andDo(print());
+    }
+
+
+    @Test
+    void 없는_게시글에_대한_댓글_수정요청시_에러가_발생한다() throws Exception {
+        //given
+        String userId = "hanana";
+        ReplyUpdate replyUpdate = new ReplyUpdate(1L,1L, "updateContent");
+
+        given(replyService.update(userId, replyUpdate)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+
+        String json = om.writeValueAsString(replyUpdate);
+
+        //when && then
+        mvc.perform(patch("/v2/reply")
+                        .header("userId",userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -154,14 +185,16 @@ public class ReplyControllerTest {
     @Test
     void 없는_댓글에_대한_댓글_수정요청시_에러가_발생한다() throws Exception {
         //given
-        ReplyUpdate replyUpdate = new ReplyUpdate("hanana",1L,1L, "updateContent");
+        String userId = "hanana";
+        ReplyUpdate replyUpdate = new ReplyUpdate(1L,1L, "updateContent");
 
-        given(replyService.update(replyUpdate)).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
+        given(replyService.update(userId, replyUpdate)).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
 
         String json = om.writeValueAsString(replyUpdate);
 
         //when && then
         mvc.perform(patch("/v2/reply")
+                        .header("userId",userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -173,28 +206,52 @@ public class ReplyControllerTest {
     @Test
     void 댓글_삭제가_성공한다() throws Exception {
         //given
+        String userId = "hanana";
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", Collections.emptyList(), "hanana");
         ReplyEntity reply = ReplyEntity.from(board, "reply1", "danbi", 1L, 1);
 
-        given(replyService.delete(reply.getId())).willReturn(1L);
+        given(replyService.delete(userId, reply.getId())).willReturn(1L);
 
         //when && then
-        mvc.perform(delete("/v2/reply/{replyId}",reply.getId()))
+        mvc.perform(delete("/v2/reply/{replyId}",reply.getId())
+                        .header("userId",userId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(1L))
                 .andDo(print());
     }
 
     @Test
-    void 없는_댓글에_대한_댓글_삭제요청시_에러가_발생한다() throws Exception {
+    void 자신이_작성하지_않은_댓글에_대한_댓글_삭제요청시_에러가_발생한다() throws Exception {
         //given
+        String userId = "wrongUser";
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", Collections.emptyList(), "hanana");
         ReplyEntity reply = ReplyEntity.from(board, "reply1", "danbi", 1L, 1);
 
-        given(replyService.delete(reply.getId())).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
+        given(replyService.delete(userId, reply.getId())).willThrow(new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 댓글만 삭제 가능합니다."));
 
         //when && then
-        mvc.perform(delete("/v2/reply/{replyId}",reply.getId()))
+        mvc.perform(delete("/v2/reply/{replyId}",reply.getId())
+                        .header("userId",userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("본인이 작성한 댓글만 삭제 가능합니다."))
+                .andExpect(jsonPath("$.resultCode").value(HttpStatus.CONFLICT.name()))
+                .andDo(print());
+    }
+
+
+    
+    @Test
+    void 없는_댓글에_대한_댓글_삭제요청시_에러가_발생한다() throws Exception {
+        //given
+        String userId = "hanana";
+        BoardEntity board = BoardEntity.from(1L, "title1", "content1", Collections.emptyList(), "hanana");
+        ReplyEntity reply = ReplyEntity.from(board, "reply1", "danbi", 1L, 1);
+
+        given(replyService.delete(userId, reply.getId())).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
+
+        //when && then
+        mvc.perform(delete("/v2/reply/{replyId}",reply.getId())
+                        .header("userId",userId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value("댓글이 존재하지 않습니다."))
                 .andExpect(jsonPath("$.resultCode").value(HttpStatus.NOT_FOUND.name()))

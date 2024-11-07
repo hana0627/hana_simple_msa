@@ -11,9 +11,9 @@ public interface ReplyService {
 
     List<ReplyInformation> getReplys(Long boardId);
 
-    Long create(ReplyCreate replyCreate);
+    Long create(String userId, ReplyCreate replyCreate);
 
-    Long update(ReplyUpdate replyUpdate);
+    Long update(String userId, ReplyUpdate replyUpdate);
 
-    Long delete(Long replyId);
+    Long delete(String userId, Long replyId);
 }

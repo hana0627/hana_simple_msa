@@ -80,7 +80,7 @@ public class BoardServiceTest {
     void 글_1건_조회시_없는_boardId를_사용하면_예외가_발생한다() {
         //given
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", Collections.emptyList(), "hanana");
-        given(boardRepository.findById(9999L)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+        given(boardRepository.findById(9999L)).willReturn(Optional.empty());
 
         //when & then
         ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.getBoard(9999L));
@@ -92,14 +92,15 @@ public class BoardServiceTest {
     @Test
     void 올바른_정보_입력시_글작성에_성공한다() {
         //given
-        BoardCreate boardCreate = new BoardCreate("hanana", "title", "conetent");
+        String userId = "hanana";
+        BoardCreate boardCreate = new BoardCreate("title", "conetent");
         BoardEntity board = BoardEntity.from(1L, "title", "hanana", Collections.emptyList(), "hanana");
 
 
         given(boardRepository.save(any(BoardEntity.class))).willReturn(board);
 
         //when
-        Long result = boardService.create(boardCreate);
+        Long result = boardService.create(userId, boardCreate);
 
         //then
         assertThat(result).isEqualTo(board.getId());
@@ -110,13 +111,14 @@ public class BoardServiceTest {
     @Test
     void 게시글_수정이_성공한다() {
         //given
-        BoardUpdate boardUpdate = new BoardUpdate("hanana",1L,"updateTile","updateContent");
+        String userId = "hanana";
+        BoardUpdate boardUpdate = new BoardUpdate(1L,"updateTile","updateContent");
         BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
         given(boardRepository.findById(boardUpdate.boardId())).willReturn(Optional.of(board));
 
 
         //when
-        Long result = boardService.update(boardUpdate);
+        Long result = boardService.update(userId, boardUpdate);
 
 
         //then
@@ -126,15 +128,35 @@ public class BoardServiceTest {
     }
 
     @Test
+    void 본인이_쓴_글이_아니면_게시글_수정이_불가능하다() {
+        //given
+        String wrongUserId = "wrongUserId";
+        BoardUpdate boardUpdate = new BoardUpdate(1L,"updateTile","updateContent");
+        BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
+        given(boardRepository.findById(boardUpdate.boardId())).willReturn(Optional.of(board));
+
+
+        //when
+        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.update(wrongUserId, boardUpdate));
+
+
+
+        //then
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.NOT_ME);
+        assertThat(result.getMessage()).isEqualTo("본인이 작성한 글만 수정 가능합니다.");
+    }
+
+    @Test
     void 없는_게시글에_대한_수정요청시_에러가_발생한다() {
         //given
-        BoardUpdate boardUpdate = new BoardUpdate("hanana",9999L,"updateTile","updateContent");
+        String userId = "hanana";
+        BoardUpdate boardUpdate = new BoardUpdate(9999L,"updateTile","updateContent");
         BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
         given(boardRepository.findById(boardUpdate.boardId())).willReturn(Optional.empty());
 
 
         //when && then
-        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.update(boardUpdate));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.update(userId, boardUpdate));
 
         assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
     }
@@ -142,12 +164,13 @@ public class BoardServiceTest {
     @Test
     void 게시글_삭제가_성공한다() {
         //given
+        String userId = "hanana";
         BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
         given(boardRepository.findById(board.getId())).willReturn(Optional.of(board));
 
 
         //when
-        Long result = boardService.delete(board.getId());
+        Long result = boardService.delete(userId, board.getId());
 
 
         //then
@@ -157,16 +180,32 @@ public class BoardServiceTest {
         then(boardRepository).should().delete(board);
     }
 
+    @Test
+    void 본인이_작성하지_않은글은_삭제가_불가능하다() {
+        //given
+        String wrongUserId = "wrongUserId";
+        BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
+        given(boardRepository.findById(1L)).willReturn(Optional.of(board));
+
+
+        //when && then
+        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.delete(wrongUserId, 1L));
+
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.NOT_ME);
+        assertThat(result.getMessage()).isEqualTo("본인이 작성한 글만 삭제 가능합니다.");
+    }
+
 
     @Test
     void 없는_게시글에_대한_삭제요청시_에러가_발생한다() {
         //given
+        String userId = "hanana";
         BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
-        given(boardRepository.findById(9999L)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+        given(boardRepository.findById(9999L)).willReturn(Optional.empty());
 
 
         //when && then
-        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.delete(9999L));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> boardService.delete(userId, 9999L));
 
         assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
     }

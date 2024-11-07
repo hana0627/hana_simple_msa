@@ -5,6 +5,7 @@ import hana.simple.boardservice.api.board.controller.request.BoardUpdate;
 import hana.simple.boardservice.api.board.controller.response.BoardInformation;
 import hana.simple.boardservice.api.board.service.BoardService;
 import hana.simple.boardservice.global.response.APIResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class BoardController {
     }
 
     @GetMapping("/v2/board/{boardId}")
-    public APIResponse<BoardInformation> boardInfomation (
+    public APIResponse<BoardInformation> boardInfomation(
             @PathVariable Long boardId
     ) {
         return APIResponse.success(boardService.getBoard(boardId));
@@ -31,23 +32,29 @@ public class BoardController {
 
     @PostMapping("/v2/board")
     public APIResponse<Long> boardCrete(
-        @RequestBody BoardCreate boardCreate
+            HttpServletRequest request,
+            @RequestBody BoardCreate boardCreate
     ) {
-        return APIResponse.success(boardService.create(boardCreate));
+        String userId = request.getHeader("userId");
+        return APIResponse.success(boardService.create(userId, boardCreate));
     }
 
     @PatchMapping("/v2/board")
     public APIResponse<Long> boardUpdate(
+            HttpServletRequest request,
             @RequestBody BoardUpdate boardUpdate
     ) {
-        return APIResponse.success(boardService.update(boardUpdate));
+        String userId = request.getHeader("userId");
+        return APIResponse.success(boardService.update(userId, boardUpdate));
     }
 
     @DeleteMapping("/v2/board/{boardId}")
     public APIResponse<Long> boardUpdate(
+            HttpServletRequest request,
             @PathVariable Long boardId
     ) {
-        return APIResponse.success(boardService.delete(boardId));
+        String userId = request.getHeader("userId");
+        return APIResponse.success(boardService.delete(userId, boardId));
     }
 
 }

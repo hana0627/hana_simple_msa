@@ -74,18 +74,19 @@ public class ReplyServiceTest {
     @Test
     void 댓글_작성이_성공한다() {
         //given
+        String userId = "hanana";
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", new ArrayList<>(), "hanana");
         ReplyEntity reply = ReplyEntity.from(board, "replyContent", "hanana", 1L, 1);
 
 
-        ReplyCreate replyCreate = new ReplyCreate("hanana", board.getId(), "replyContent");
+        ReplyCreate replyCreate = new ReplyCreate(board.getId(), "replyContent");
 
         given(boardRepository.findById(board.getId())).willReturn(Optional.of(board));
         given(replyRepository.findMaxSequenceByBoardId(board.getId())).willReturn(1);
         given(replyRepository.save(any(ReplyEntity.class))).willReturn(reply);
 
         //when
-        Long result = replyService.create(replyCreate);
+        Long result = replyService.create(userId, replyCreate);
 
         //then
         then(boardRepository).should().findById(board.getId());
@@ -100,12 +101,13 @@ public class ReplyServiceTest {
     @Test
     void 없는_게시글에_댓글_요청시_예외가_발생한다() {
         //given
-        ReplyCreate replyCreate = new ReplyCreate("hanana", 9999L, "replyContent");
+        String userId = "hanana";
+        ReplyCreate replyCreate = new ReplyCreate(9999L, "replyContent");
 
-        given(boardRepository.findById(replyCreate.boardId())).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+        given(boardRepository.findById(replyCreate.boardId())).willReturn(Optional.empty());
 
         //when && then
-        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.create(replyCreate));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.create(userId, replyCreate));
 
         assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
     }
@@ -114,16 +116,17 @@ public class ReplyServiceTest {
     @Test
     void 게시글_수정이_성공한다() {
         //given
+        String userId = "hanana";
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", new ArrayList<>(), "hanana");
         ReplyEntity reply = ReplyEntity.from(board, "replyContent", "hanana", 1L, 1);
-        ReplyUpdate replyUpdate = new ReplyUpdate("hanana", 1L,1L, "updatedReplyContent");
+        ReplyUpdate replyUpdate = new ReplyUpdate(1L,1L, "updatedReplyContent");
 
 
         given(boardRepository.findById(replyUpdate.boardId())).willReturn(Optional.of(board));
         given(replyRepository.findById(replyUpdate.replyId())).willReturn(Optional.of(reply));
 
         //when && then
-        Long result = replyService.update(replyUpdate);
+        Long result = replyService.update(userId, replyUpdate);
 
         then(boardRepository).should().findById(replyUpdate.boardId());
         then(replyRepository).should().findById(replyUpdate.replyId());
@@ -134,14 +137,35 @@ public class ReplyServiceTest {
     }
 
     @Test
-    void 없는_게시글에_대한_댓글_수정요청시_에러가_발생한다() {
+    void 자신이_작성하지_않은_댓글_수정요청시_에러가_발생한다() {
         //given
-        ReplyUpdate replyUpdate = new ReplyUpdate("hanana", 1L,9999L, "replyContent");
+        String userId = "wrongUser";
+        ReplyUpdate replyUpdate = new ReplyUpdate(1L,1L, "replyContent");
+        BoardEntity board = BoardEntity.from(1L, "title1", "content1", new ArrayList<>(), "hanana");
+        ReplyEntity reply = ReplyEntity.from(board, "replyContent", "hanana", 1L, 1);
 
-        given(boardRepository.findById(replyUpdate.boardId())).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+        given(boardRepository.findById(replyUpdate.boardId())).willReturn(Optional.of(board));
+        given(replyRepository.findById(replyUpdate.boardId())).willReturn(Optional.of(reply));
 
         //when && then
-        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.update(replyUpdate));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.update(userId, replyUpdate));
+
+        then(boardRepository).should().findById(replyUpdate.boardId());
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.NOT_ME);
+        assertThat(result.getMessage()).isEqualTo("본인이 작성한 댓글만 수정 가능합니다.");
+
+    }
+
+    @Test
+    void 없는_게시글에_대한_댓글_수정요청시_에러가_발생한다() {
+        //given
+        String userId = "hanana";
+        ReplyUpdate replyUpdate = new ReplyUpdate(1L,9999L, "replyContent");
+
+        given(boardRepository.findById(replyUpdate.boardId())).willReturn(Optional.empty());
+
+        //when && then
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.update(userId, replyUpdate));
 
         then(boardRepository).should().findById(replyUpdate.boardId());
         assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
@@ -151,14 +175,15 @@ public class ReplyServiceTest {
     @Test
     void 없는_댓글에_대한_댓글_수정요청시_에러가_발생한다() {
         //given
+        String userId = "hanana";
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", new ArrayList<>(), "hanana");
-        ReplyUpdate replyUpdate = new ReplyUpdate("hanana", 9999L,1L, "replyContent");
+        ReplyUpdate replyUpdate = new ReplyUpdate(9999L,1L, "replyContent");
 
         given(boardRepository.findById(replyUpdate.boardId())).willReturn(Optional.of(board));
-        given(replyRepository.findById(replyUpdate.replyId())).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
+        given(replyRepository.findById(replyUpdate.replyId())).willReturn(Optional.empty());
 
         //when && then
-        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.update(replyUpdate));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.update(userId, replyUpdate));
 
         then(boardRepository).should().findById(replyUpdate.boardId());
         then(replyRepository).should().findById(replyUpdate.replyId());
@@ -168,6 +193,7 @@ public class ReplyServiceTest {
     @Test
     void 댓글_삭제가_성공한다() {
         //given
+        String userId = "hanana";
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", new ArrayList<>(), "hanana");
         ReplyEntity reply = ReplyEntity.from(board, "replyContent", "hanana", 1L, 1);
 
@@ -175,7 +201,7 @@ public class ReplyServiceTest {
         given(replyRepository.findById(reply.getId())).willReturn(Optional.of(reply));
 
         //when && then
-        Long result = replyService.delete(reply.getId());
+        Long result = replyService.delete(userId, reply.getId());
 
         then(replyRepository).should().findById(reply.getId());
 
@@ -185,16 +211,34 @@ public class ReplyServiceTest {
     }
 
     @Test
-    void 없는_댓글에_대한_댓글_삭제요청시_에러가_발생한다() {
+    void 자신이_작성하지_않은_댓글에_대한_댓글_삭제요청시_에러가_발생한다() {
         //given
+        String userId = "wrongUser";
         BoardEntity board = BoardEntity.from(1L, "title1", "content1", new ArrayList<>(), "hanana");
         ReplyEntity reply = ReplyEntity.from(board, "replyContent", "hanana", 1L, 1);
 
-        given(replyRepository.findById(9999L)).willThrow(new ApplicationException(ErrorCode.REPLY_NOT_FOUND, "댓글이 존재하지 않습니다."));
+        given(replyRepository.findById(1L)).willReturn(Optional.of(reply));
 
 
         //when && then
-        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.delete(9999L));
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.delete(userId, 1L));
+        assertThat(result.getErrorCode()).isEqualTo(ErrorCode.NOT_ME);
+        assertThat(result.getMessage()).isEqualTo("본인이 작성한 댓글만 삭제 가능합니다.");
+    }
+
+
+    @Test
+    void 없는_댓글에_대한_댓글_삭제요청시_에러가_발생한다() {
+        //given
+        String userId = "hanana";
+        BoardEntity board = BoardEntity.from(1L, "title1", "content1", new ArrayList<>(), "hanana");
+        ReplyEntity reply = ReplyEntity.from(board, "replyContent", "hanana", 1L, 1);
+
+        given(replyRepository.findById(9999L)).willReturn(Optional.empty());
+
+
+        //when && then
+        ApplicationException result = assertThrows(ApplicationException.class, () -> replyService.delete(userId, 9999L));
         assertThat(result.getErrorCode()).isEqualTo(ErrorCode.REPLY_NOT_FOUND);
     }
 

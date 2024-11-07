@@ -67,13 +67,13 @@ public class BoardControllerTest {
 
 
     @Test
-    void 글_1건_조회가_성공한다() throws Exception{
+    void 글_1건_조회가_성공한다() throws Exception {
         //given
         BoardInformation information1 = new BoardInformation("title1", "content1", "hanana", now());
         given(boardService.getBoard(1L)).willReturn(information1);
 
         //when && then
-        mvc.perform(get("/v2/board/{boardId}",1L))
+        mvc.perform(get("/v2/board/{boardId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.title").value("title1"))
                 .andExpect(jsonPath("$.result.content").value("content1"))
@@ -85,13 +85,13 @@ public class BoardControllerTest {
     }
 
     @Test
-    void 글_1건_조회시_없는_boardId를_사용하면_예외가_발생한다() throws Exception{
+    void 글_1건_조회시_없는_boardId를_사용하면_예외가_발생한다() throws Exception {
         //given
         BoardInformation information1 = new BoardInformation("title1", "content1", "hanana", now());
         given(boardService.getBoard(9999L)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
 
         //when && then
-        mvc.perform(get("/v2/board/{boardId}",9999L))
+        mvc.perform(get("/v2/board/{boardId}", 9999L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value("게시글이 존재하지 않습니다."))
                 .andExpect(jsonPath("$.resultCode").value(HttpStatus.NOT_FOUND.name()))
@@ -99,59 +99,88 @@ public class BoardControllerTest {
     }
 
     @Test
-    void 올바른_정보_입력시_글작성에_성공한다() throws Exception{
+    void 올바른_정보_입력시_글작성에_성공한다() throws Exception {
         //given
-        BoardCreate boardCreate = new BoardCreate("hanana", "title","content");
-        given(boardService.create(boardCreate)).willReturn(1L);
+        String userId = "hanana";
+        BoardCreate boardCreate = new BoardCreate("title", "content");
+        given(boardService.create(userId, boardCreate)).willReturn(1L);
 
         String json = om.writeValueAsString(boardCreate);
 
         //when && then
         mvc.perform(post("/v2/board")
-                .content(json)
-                .contentType(MediaType.APPLICATION_JSON))
+                        .header("userId", userId)
+                        .content(json)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(1L))
                 .andDo(print());
 
-        then(boardService).should().create(boardCreate);
+        then(boardService).should().create(userId, boardCreate);
 
     }
 
     @Test
-    void 게시글_수정이_성공한다() throws Exception{
+    void 게시글_수정이_성공한다() throws Exception {
         //given
-        BoardUpdate boardUpdate = new BoardUpdate("hanana",1L,"updateTitle","content");
+        String userId = "hanana";
+        BoardUpdate boardUpdate = new BoardUpdate(1L, "updateTitle", "content");
 
         String json = om.writeValueAsString(boardUpdate);
 
-        given(boardService.update(boardUpdate)).willReturn(1L);
+        given(boardService.update(userId, boardUpdate)).willReturn(1L);
 
 
         //when && then
         mvc.perform(patch("/v2/board")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json))
+                        .header("userId", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(1L))
                 .andDo(print());
 
-        then(boardService).should().update(boardUpdate);
+        then(boardService).should().update(userId, boardUpdate);
 
     }
 
+
     @Test
-    void 없는_게시글이나_대한_수정요청시_에러가_발생한다() throws Exception{
+    void 본인이_작성하지_않은_게시글에_대한_수정요청시_에러가_발생한다() throws Exception {
         //given
-        BoardUpdate boardUpdate = new BoardUpdate("hanana",1L,"updateTitle","content");
+        String userId = "wrongUser";
+        BoardUpdate boardUpdate = new BoardUpdate(1L, "updateTitle", "content");
 
         String json = om.writeValueAsString(boardUpdate);
 
-        given(boardService.update(boardUpdate)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+        given(boardService.update(userId, boardUpdate)).willThrow(new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 글만 수정 가능합니다."));
 
 
         //when && then
         mvc.perform(patch("/v2/board")
+                        .header("userId", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("본인이 작성한 글만 수정 가능합니다."))
+                .andExpect(jsonPath("$.resultCode").value(HttpStatus.CONFLICT.name()))
+                .andDo(print());
+    }
+
+    @Test
+    void 없는_게시글에_대한_수정요청시_에러가_발생한다() throws Exception {
+        //given
+        String userId = "hanana";
+        BoardUpdate boardUpdate = new BoardUpdate(1L, "updateTitle", "content");
+
+        String json = om.writeValueAsString(boardUpdate);
+
+        given(boardService.update(userId, boardUpdate)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+
+
+        //when && then
+        mvc.perform(patch("/v2/board")
+                        .header("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -161,27 +190,48 @@ public class BoardControllerTest {
     }
 
     @Test
-    void 게시글_삭제가_성공한다() throws Exception{
+    void 게시글_삭제가_성공한다() throws Exception {
         //given
-        given(boardService.delete(1L)).willReturn(1L);
+        String userId = "hanana";
+        given(boardService.delete(userId, 1L)).willReturn(1L);
 
         //when && then
-        mvc.perform(delete("/v2/board/{boardId}",1L))
+        mvc.perform(delete("/v2/board/{boardId}", 1L)
+                .header("userId", userId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(1L))
                 .andDo(print());
 
-        then(boardService).should().delete(1L);
+        then(boardService).should().delete(userId, 1L);
+
+    }
+
+
+    @Test
+    void 본인이_작성하지_않은_게시글에_대한_삭제요청시_에러가_발생한다() throws Exception {
+        //given
+        String userId = "wrongUser";
+        given(boardService.delete(userId, 1L)).willThrow(new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 글만 삭제 가능합니다."));
+
+        //when && then
+        mvc.perform(delete("/v2/board/{boardId}", 1L)
+                        .header("userId", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("본인이 작성한 글만 삭제 가능합니다."))
+                .andExpect(jsonPath("$.resultCode").value(HttpStatus.CONFLICT.name()))
+                .andDo(print());
 
     }
 
     @Test
-    void 없는_게시글에_대한_삭제요청시_에러가_발생한다() throws Exception{
+    void 없는_게시글에_대한_삭제요청시_에러가_발생한다() throws Exception {
         //given
-        given(boardService.delete(1L)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+        String userId = "hanana";
+        given(boardService.delete(userId, 1L)).willThrow(new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
 
         //when && then
-        mvc.perform(delete("/v2/board/{boardId}",1L))
+        mvc.perform(delete("/v2/board/{boardId}", 1L)
+                .header("userId", userId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value("게시글이 존재하지 않습니다."))
                 .andExpect(jsonPath("$.resultCode").value(HttpStatus.NOT_FOUND.name()))

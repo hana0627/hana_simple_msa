@@ -34,14 +34,16 @@ public class ReplyServiceImpl implements ReplyService {
 
     @Override
     @Transactional
-    public Long create(ReplyCreate replyCreate) {
+    public Long create(String userId, ReplyCreate replyCreate) {
+        //TODO UserService 통신
+        
         BoardEntity board = getBoardOrExceptionByBoardId(replyCreate.boardId());
         Integer sequence = getMaxSequence(replyCreate.boardId());
 
         ReplyEntity reply = ReplyEntity.builder()
                 .board(board)
                 .content(replyCreate.content())
-                .createId(replyCreate.userId())
+                .createId(userId)
                 .sequence(sequence)
                 .build();
 
@@ -53,20 +55,28 @@ public class ReplyServiceImpl implements ReplyService {
 
     @Override
     @Transactional
-    public Long update(ReplyUpdate replyUpdate) {
+    public Long update(String userId, ReplyUpdate replyUpdate) {
+        //TODO UserService 통신
         if(isExistBoard(replyUpdate.boardId())) {
             ReplyEntity reply = getReplyOrExceptionById(replyUpdate.replyId());
-            reply.updateReply(replyUpdate);
+            if(userId.equals(reply.getCreateId())) {
+                reply.updateReply(replyUpdate);
+                return replyUpdate.replyId();
+            }
         }
-        return replyUpdate.replyId();
+        throw new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 댓글만 수정 가능합니다.");
     }
 
     @Override
     @Transactional
-    public Long delete(Long replyId) {
+    public Long delete(String userId, Long replyId) {
+        //TODO UserService 통신
         ReplyEntity reply = getReplyOrExceptionById(replyId);
-        replyRepository.delete(reply);
-        return replyId;
+        if(userId.equals(reply.getCreateId())) {
+            replyRepository.delete(reply);
+            return replyId;
+        }
+        throw new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 댓글만 삭제 가능합니다.");
     }
 
 

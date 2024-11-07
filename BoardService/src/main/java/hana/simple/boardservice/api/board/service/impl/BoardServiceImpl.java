@@ -26,13 +26,13 @@ public class BoardServiceImpl implements BoardService {
     @Override
     public List<BoardInformation> getAllBoards() {
         return boardRepository.findAll().stream().map(
-            BoardMapper::boardInformation
+                BoardMapper::boardInformation
         ).toList();
     }
 
     @Override
     public BoardInformation getBoard(Long boardId) {
-        BoardEntity board = getOrExceptionById(boardId);
+        BoardEntity board = boardRepository.findById(boardId).orElseThrow(() -> new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
         return BoardInformation.builder()
                 .title(board.getTitle())
                 .content(board.getContent())
@@ -43,11 +43,10 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public Long create(BoardCreate boardCreate) {
+    public Long create(String userId, BoardCreate boardCreate) {
         //TODO - userService에 userId가 유효한지 확인
-        //TODO - DTO로 정보를 받기 전에 토큰정보를 이용할 수는 없는지
         BoardEntity board = BoardEntity.builder()
-                .createId(boardCreate.userId())
+                .createId(userId)
                 .title(boardCreate.title())
                 .content(boardCreate.content())
                 .build();
@@ -56,26 +55,29 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public Long update(BoardUpdate boardUpdate) {
+    public Long update(String userId, BoardUpdate boardUpdate) {
         //TODO - userService에 userId가 유효한지 확인
-        //TODO - DTO로 정보를 받기 전에 토큰정보를 이용할 수는 없는지
-        BoardEntity board = getOrExceptionById(boardUpdate.boardId());
-        board.updateByBoardUpdate(boardUpdate); // 더티체킹으로 update
-        return board.getId();
+        BoardEntity board = boardRepository.findById(boardUpdate.boardId()).orElseThrow(() -> new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+
+        if (userId.equals(board.getCreateId())) {
+            board.updateByBoardUpdate(boardUpdate); // 더티체킹으로 update
+            return board.getId();
+        }
+        throw new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 글만 수정 가능합니다.");
     }
 
     @Override
     @Transactional
-    public Long delete(Long boardId) {
+    public Long delete(String userId, Long boardId) {
         //TODO - userService에 userId가 유효한지 확인
-        //TODO - DTO로 정보를 받기 전에 토큰정보를 이용할 수는 없는지
-        BoardEntity board = getOrExceptionById(boardId);
-        boardRepository.delete(board);
-        return boardId;
+        BoardEntity board = boardRepository.findById(boardId).orElseThrow(() -> new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
+
+        if(userId.equals(board.getCreateId())) {
+            boardRepository.delete(board);
+            return boardId;
+        }
+        throw new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 글만 삭제 가능합니다.");
     }
 
 
-    private BoardEntity getOrExceptionById(Long id) {
-        return boardRepository.findById(id).orElseThrow(() -> new ApplicationException(ErrorCode.BOARD_NOT_FOUND, "게시글이 존재하지 않습니다."));
-    }
 }

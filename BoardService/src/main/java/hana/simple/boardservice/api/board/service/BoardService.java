@@ -13,9 +13,9 @@ public interface BoardService {
 
     BoardInformation getBoard(Long boardId);
 
-    Long create(BoardCreate boardCreate);
+    Long create(String userId, BoardCreate boardCreate);
 
-    Long update(BoardUpdate boardUpdate);
+    Long update(String userId, BoardUpdate boardUpdate);
 
-    Long delete(Long boardId);
+    Long delete(String userId, Long boardId);
 }

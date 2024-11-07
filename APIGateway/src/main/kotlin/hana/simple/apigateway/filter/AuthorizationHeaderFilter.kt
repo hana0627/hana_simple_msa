@@ -48,6 +48,16 @@ class AuthorizationHeaderFilter(
                 return@GatewayFilter onError(exchange, "JWT token is not valid", HttpStatus.UNAUTHORIZED)
             }
 
+            // 사용자검증 추가
+
+            val userId: String = request.headers["userId"]?.get(0) ?: throw RuntimeException("not contain userId header")
+
+            val jwtUserId: String = jwtUtils.getUserId(jwt)
+            if(userId != jwtUserId) {
+                return@GatewayFilter onError(exchange, "Not contain UserId header", HttpStatus.CONFLICT)
+            }
+
+
             chain.filter(exchange)
         })
     }

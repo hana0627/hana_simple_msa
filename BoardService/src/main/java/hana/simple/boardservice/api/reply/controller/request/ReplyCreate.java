@@ -7,10 +7,6 @@ public record ReplyCreate(
         Long boardId,
         String content
 ) {
-
     @Builder
-    public ReplyCreate(Long boardId, String content) {
-        this.boardId = boardId;
-        this.content = content;
-    }
+    public ReplyCreate {}
 }

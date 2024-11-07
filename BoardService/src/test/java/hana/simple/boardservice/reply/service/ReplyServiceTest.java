@@ -11,7 +11,6 @@ import hana.simple.boardservice.api.reply.repository.ReplyRepository;
 import hana.simple.boardservice.api.reply.service.impl.ReplyServiceImpl;
 import hana.simple.boardservice.global.exception.ApplicationException;
 import hana.simple.boardservice.global.exception.constant.ErrorCode;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

@@ -8,9 +8,5 @@ public record ReplyUpdate(
         String content
 ) {
     @Builder
-    public ReplyUpdate(Long replyId, Long boardId, String content) {
-        this.replyId = replyId;
-        this.boardId = boardId;
-        this.content = content;
-    }
+    public ReplyUpdate {}
 }

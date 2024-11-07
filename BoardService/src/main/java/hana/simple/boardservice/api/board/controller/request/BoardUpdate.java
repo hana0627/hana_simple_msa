@@ -8,9 +8,5 @@ public record BoardUpdate(
         String content
 ) {
     @Builder
-    public BoardUpdate(Long boardId, String title, String content) {
-        this.boardId = boardId;
-        this.title = title;
-        this.content = content;
-    }
+    public BoardUpdate {}
 }

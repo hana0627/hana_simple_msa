@@ -1,5 +1,6 @@
 package hana.simple.userservice.user.unit.mock.jwt
 
+import hana.simple.userservice.api.user.domain.UserEntity
 import hana.simple.userservice.global.config.jwt.JwtUtils
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -15,8 +16,7 @@ class FakeJwtUtils() : JwtUtils {
     override fun generateToken(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        userId: String,
-        userName: String
+        userEntity: UserEntity,
     ): String {
         return "BEARER jwtToken"
     }

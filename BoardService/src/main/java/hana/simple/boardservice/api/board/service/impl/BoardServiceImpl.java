@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -58,7 +60,7 @@ public class BoardServiceImpl implements BoardService {
 
         BoardEntity savedBoard = boardRepository.save(board);
         try {
-            sendCreateMessage(userId, board, savedBoard.getId().toString());
+            sendCreateMessage(userId, savedBoard.getId().toString());
         } catch (Exception e) {
             throw new ApplicationException(ErrorCode.INTERNAL_SERVER_ERROR, "서버 통신간 에러 발생");
         }
@@ -85,7 +87,7 @@ public class BoardServiceImpl implements BoardService {
         if(userId.equals(board.getCreateId())) {
             boardRepository.delete(board);
             try {
-                sendDeleteMessage(userId, board, boardId.toString());
+                sendDeleteMessage(userId, boardId.toString());
             } catch (Exception e) {
                 throw new ApplicationException(ErrorCode.INTERNAL_SERVER_ERROR, "서버 통신간 에러 발생");
             }
@@ -96,22 +98,26 @@ public class BoardServiceImpl implements BoardService {
         throw new ApplicationException(ErrorCode.NOT_ME, "본인이 작성한 글만 삭제 가능합니다.");
     }
 
-    private <T> void sendCreateMessage (String userId, T t, String boardId) throws Exception {
+    private <T> void sendCreateMessage (String userId, String boardId) throws Exception {
         if(!StringUtils.hasText(userId)) {
             throw new ApplicationException(ErrorCode.USER_NOT_FOUND, "회원정보를 찾을 수 없습니다.");
         }
         String key = "boardId"+boardId;
-        String message = objectMapper.writeValueAsString(t);
+        Map<String, String> map = new HashMap<>();
+        map.put("userId", userId);
+        String message = objectMapper.writeValueAsString(map);
 
         kafkaProducer.sendMessage("hana_sample_create", key, message);
     }
 
-    private <T> void sendDeleteMessage (String userId, T t, String boardId) throws Exception {
+    private <T> void sendDeleteMessage (String userId, String boardId) throws Exception {
         if(!StringUtils.hasText(userId)) {
             throw new ApplicationException(ErrorCode.USER_NOT_FOUND, "회원정보를 찾을 수 없습니다.");
         }
         String key = "boardId"+boardId;
-        String message = objectMapper.writeValueAsString(t);
+        Map<String, String> map = new HashMap<>();
+        map.put("userId", userId);
+        String message = objectMapper.writeValueAsString(map);
 
         kafkaProducer.sendMessage("hana_sample_delete", key, message);
     }

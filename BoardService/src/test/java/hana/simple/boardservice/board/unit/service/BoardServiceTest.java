@@ -1,11 +1,13 @@
 package hana.simple.boardservice.board.unit.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hana.simple.boardservice.api.board.controller.request.BoardCreate;
 import hana.simple.boardservice.api.board.controller.request.BoardUpdate;
 import hana.simple.boardservice.api.board.controller.response.BoardInformation;
 import hana.simple.boardservice.api.board.domain.BoardEntity;
 import hana.simple.boardservice.api.board.repository.BoardRepository;
 import hana.simple.boardservice.api.board.service.impl.BoardServiceImpl;
+import hana.simple.boardservice.api.message.KafkaProducer;
 import hana.simple.boardservice.global.exception.ApplicationException;
 import hana.simple.boardservice.global.exception.constant.ErrorCode;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,10 @@ import static org.mockito.BDDMockito.then;
 public class BoardServiceTest {
     @Mock
     private BoardRepository boardRepository;
+    @Mock
+    private KafkaProducer kafkaProducer;
+    @Mock
+    private ObjectMapper om;
 
     @InjectMocks
     private BoardServiceImpl boardService;
@@ -90,7 +96,7 @@ public class BoardServiceTest {
     }
 
     @Test
-    void 올바른_정보_입력시_글작성에_성공한다() {
+    void 올바른_정보_입력시_글작성에_성공한다() throws Exception{
         //given
         String userId = "hanana";
         BoardCreate boardCreate = new BoardCreate("title", "conetent");
@@ -98,6 +104,13 @@ public class BoardServiceTest {
 
 
         given(boardRepository.save(any(BoardEntity.class))).willReturn(board);
+        given(om.writeValueAsString(any())).willReturn("""
+                {"key":"value"}
+                """
+        );
+
+        given(kafkaProducer.sendMessage(any(),any(), any())).willReturn("OK");
+
 
         //when
         Long result = boardService.create(userId, boardCreate);
@@ -162,12 +175,16 @@ public class BoardServiceTest {
     }
 
     @Test
-    void 게시글_삭제가_성공한다() {
+    void 게시글_삭제가_성공한다() throws Exception{
         //given
         String userId = "hanana";
         BoardEntity board = BoardEntity.from(1L, "title", "content", Collections.emptyList(), "hanana");
         given(boardRepository.findById(board.getId())).willReturn(Optional.of(board));
 
+        given(om.writeValueAsString(any())).willReturn("""
+                {"key":"value"}
+                """
+        );
 
         //when
         Long result = boardService.delete(userId, board.getId());
@@ -210,4 +227,8 @@ public class BoardServiceTest {
         assertThat(result.getErrorCode()).isEqualTo(ErrorCode.BOARD_NOT_FOUND);
     }
 
+
+    private String mockFindUser(String userId) {
+        return "mockedValue";
+    }
 }

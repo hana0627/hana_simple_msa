@@ -59,6 +59,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     //redis.LocalDateTime - end
 
+    //kafka - start
+    implementation 'org.springframework.kafka:spring-kafka'
+    //kafka - end
+
 }
 
 dependencyManagement {

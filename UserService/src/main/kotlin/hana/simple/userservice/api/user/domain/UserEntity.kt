@@ -2,6 +2,8 @@ package hana.simple.userservice.api.user.domain
 
 import hana.simple.userservice.api.common.domain.AuditingFields
 import hana.simple.userservice.api.common.domain.constant.Gender
+import hana.simple.userservice.global.exception.ApplicationException
+import hana.simple.userservice.global.exception.constant.ErrorCode
 import jakarta.persistence.*
 
 @Entity
@@ -18,6 +20,7 @@ data class UserEntity (
     @Column(length = 1)
     @Enumerated(EnumType.STRING)
     var gender: Gender,
+    var boardCount: Int,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long?,
@@ -33,6 +36,7 @@ data class UserEntity (
             password: String = "password1234",
             phoneNumber: String = "01012345678",
             gender: Gender = Gender.F,
+            boardCount: Int? =  0,
             id: Long? = null
         ) : UserEntity {
             return UserEntity(
@@ -41,8 +45,21 @@ data class UserEntity (
                 password = password,
                 phoneNumber = phoneNumber,
                 gender = gender,
+                boardCount = boardCount?:0,
                 id = id
             )
         }
+    }
+
+
+    fun plusBoardCount() {
+        if(boardCount > 10) {
+            throw ApplicationException(ErrorCode.MAX_BOARD_COUNT,"게시글은 10개까지 작성 가능합니다.")
+        }
+        boardCount++
+    }
+
+    fun minusBoardCount() {
+        boardCount--
     }
 }

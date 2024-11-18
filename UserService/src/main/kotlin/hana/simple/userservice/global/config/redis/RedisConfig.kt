@@ -33,6 +33,7 @@ class RedisConfig (
     }
 
     //RedisTemplate
+    @Bean
     fun userRedisTemplate(): RedisTemplate<String, UserEntity> {
         val redisTemplate: RedisTemplate<String, UserEntity> = RedisTemplate()
         redisTemplate.connectionFactory = redisConnectionFactory()

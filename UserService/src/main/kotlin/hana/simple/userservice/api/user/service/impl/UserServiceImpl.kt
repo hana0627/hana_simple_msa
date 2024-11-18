@@ -34,6 +34,7 @@ class UserServiceImpl(
                 password = passwordEncoder.encode(userCreate.password),
                 phoneNumber = userCreate.phoneNumber,
                 gender = userCreate.gender,
+                boardCount = 0,
                 id = null,
             )
             userCacheRepository.setUser(user)

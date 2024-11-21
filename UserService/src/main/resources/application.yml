@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: user-service
+  config:
+    activate:
+      on-profile: local
   datasource:
     url: ${MYSQL_URL}
     username: ${MYSQL_USERNAME}
@@ -41,3 +44,52 @@ jwt:
   #30min
   token.expired-time-ms: 1800
   refresh.expired-time-ms: 4000
+
+---
+server:
+  port: 8080
+
+spring:
+  application:
+    name: user-service
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${MYSQL_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    hikari:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 200
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+eureka:
+  instance:
+    #instance id를 지정
+    #hostname:instance_id:random_value
+    instance-id: ${spring.cloud.client.hostname}:${spring.application.instance_id:${random.value}}
+  client:
+    register-with-eureka: true # Eureka서버에 클라이언트로 등록하겠다는 설정
+    fetch-registry: true # Eureka 서버로부터 인스턴트들의 주기적으로 가져오겠다는 설정
+    #서비스 위치를 지정해주는 설정
+    service-url:
+      #아래 경로에 MicroService로 등록
+      defaultZone: http://111.111.111.111:8761/eureka
+
+jwt:
+  secret-key: ${SECRET_KEY}
+  #30min
+  token.expired-time-ms: 1800
+  refresh.expired-time-ms: 4000
+

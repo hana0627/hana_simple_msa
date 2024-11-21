@@ -58,4 +58,10 @@ class UserController(
     ): APIResponse<Long> {
         return APIResponse.success(userService.deleteUser(userId))
     }
+
+    @GetMapping("/v3/writeable")
+    fun writeable(request: HttpServletRequest) : APIResponse<Boolean>{
+        val userId = request.getHeader("userId")
+        return APIResponse.success(userService.writeable(userId))
+    }
 }

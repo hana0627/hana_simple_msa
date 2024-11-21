@@ -93,6 +93,12 @@ class UserServiceImpl(
         return user.id!!
     }
 
+    override fun writeable(userId: String): Boolean {
+        val user: UserEntity = findUserByUserId(userId) ?: throw ApplicationException(ErrorCode.USER_NOT_FOUND, "회원 정보를 찾을 수 없습니다.")
+        // 10개까지만 글쓰기 가능
+        return user.boardCount < 10
+    }
+
 
     private fun isNotDuplicate(userId: String): Boolean {
         return userRepository.findByUserId(userId) == null

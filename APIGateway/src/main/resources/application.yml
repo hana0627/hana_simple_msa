@@ -13,6 +13,15 @@ spring:
   cloud:
     gateway:
       routes:
+
+        - id: user-service
+          uri: lb://user-service #등록된 MicroService 이름
+          predicates: # 조건절과 같은 의미
+            - Path=/user-service/v3/** #Path 정보를 지정
+          filters:
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+            - name: AuthorizationHeaderFilter
+
         - id: user-service
           uri: lb://user-service #등록된 MicroService 이름
           predicates: # 조건절과 같은 의미
@@ -27,6 +36,14 @@ spring:
             - Path=/user-service/v1/**
           filters:
             - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+
+        - id: board-service
+          uri: lb://board-service #등록된 MicroService 이름
+          predicates: # 조건절과 같은 의미
+            - Path=/board-service/v3/** #Path 정보를 지정
+          filters:
+            - RewritePath=/board-service/(?<segment>.*), /$\{segment}
+            - name: AuthorizationHeaderFilter
 
         - id: board-service
           uri: lb://board-service #등록된 MicroService 이름

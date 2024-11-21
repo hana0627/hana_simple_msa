@@ -12,4 +12,5 @@ interface UserService {
     fun getUserInformation(userId: String): UserInformation
     fun changePassword(userId: String, userPasswordChange: UserPasswordChange): Long
     fun deleteUser(userId: String): Long
+    fun writeable(userId: String): Boolean
 }

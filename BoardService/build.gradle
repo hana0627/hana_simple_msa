@@ -40,6 +40,10 @@ dependencies {
     //kafka - start
     implementation 'org.springframework.kafka:spring-kafka'
     //kafka - end
+
+    // feign client
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    // feign client
 }
 
 dependencyManagement {

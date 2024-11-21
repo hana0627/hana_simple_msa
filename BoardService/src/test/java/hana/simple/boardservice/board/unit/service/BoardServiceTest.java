@@ -7,9 +7,11 @@ import hana.simple.boardservice.api.board.controller.response.BoardInformation;
 import hana.simple.boardservice.api.board.domain.BoardEntity;
 import hana.simple.boardservice.api.board.repository.BoardRepository;
 import hana.simple.boardservice.api.board.service.impl.BoardServiceImpl;
+import hana.simple.boardservice.api.feignclinet.UserServiceClient;
 import hana.simple.boardservice.api.message.KafkaProducer;
 import hana.simple.boardservice.global.exception.ApplicationException;
 import hana.simple.boardservice.global.exception.constant.ErrorCode;
+import hana.simple.boardservice.global.response.APIResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,6 +38,8 @@ public class BoardServiceTest {
     private KafkaProducer kafkaProducer;
     @Mock
     private ObjectMapper om;
+    @Mock
+    private UserServiceClient userServiceClient;
 
     @InjectMocks
     private BoardServiceImpl boardService;
@@ -99,10 +103,12 @@ public class BoardServiceTest {
     void 올바른_정보_입력시_글작성에_성공한다() throws Exception{
         //given
         String userId = "hanana";
+        String authorization = "authorization";
         BoardCreate boardCreate = new BoardCreate("title", "conetent");
         BoardEntity board = BoardEntity.from(1L, "title", "hanana", Collections.emptyList(), "hanana");
 
 
+        given(userServiceClient.writeable(authorization, userId)).willReturn(APIResponse.success(true));
         given(boardRepository.save(any(BoardEntity.class))).willReturn(board);
         given(om.writeValueAsString(any())).willReturn("""
                 {"key":"value"}
@@ -113,7 +119,7 @@ public class BoardServiceTest {
 
 
         //when
-        Long result = boardService.create(userId, boardCreate);
+        Long result = boardService.create(authorization, userId, boardCreate);
 
         //then
         assertThat(result).isEqualTo(board.getId());

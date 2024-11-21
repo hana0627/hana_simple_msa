@@ -36,7 +36,8 @@ public class BoardController {
             @RequestBody BoardCreate boardCreate
     ) {
         String userId = request.getHeader("userId");
-        return APIResponse.success(boardService.create(userId, boardCreate));
+        String authorization = request.getHeader("Authorization");
+        return APIResponse.success(boardService.create(authorization, userId, boardCreate));
     }
 
     @PatchMapping("/v2/board")

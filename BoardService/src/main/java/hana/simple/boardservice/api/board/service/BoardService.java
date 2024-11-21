@@ -13,7 +13,7 @@ public interface BoardService {
 
     BoardInformation getBoard(Long boardId);
 
-    Long create(String userId, BoardCreate boardCreate);
+    Long create(String authorization, String userId, BoardCreate boardCreate);
 
     Long update(String userId, BoardUpdate boardUpdate);
 

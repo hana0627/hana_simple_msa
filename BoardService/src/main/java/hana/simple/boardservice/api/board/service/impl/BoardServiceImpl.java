@@ -8,9 +8,11 @@ import hana.simple.boardservice.api.board.domain.BoardEntity;
 import hana.simple.boardservice.api.board.domain.BoardMapper;
 import hana.simple.boardservice.api.board.repository.BoardRepository;
 import hana.simple.boardservice.api.board.service.BoardService;
+import hana.simple.boardservice.api.feignclinet.UserServiceClient;
 import hana.simple.boardservice.api.message.KafkaProducer;
 import hana.simple.boardservice.global.exception.ApplicationException;
 import hana.simple.boardservice.global.exception.constant.ErrorCode;
+import hana.simple.boardservice.global.response.APIResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ import java.util.Map;
 public class BoardServiceImpl implements BoardService {
     private final BoardRepository boardRepository;
     private final KafkaProducer kafkaProducer;
+    private final UserServiceClient userServiceClient;
     private final ObjectMapper objectMapper;
 
 
@@ -51,20 +54,26 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public Long create(String userId, BoardCreate boardCreate) {
-        BoardEntity board = BoardEntity.builder()
-                .createId(userId)
-                .title(boardCreate.title())
-                .content(boardCreate.content())
-                .build();
+    public Long create(String authorization, String userId, BoardCreate boardCreate) {
 
-        BoardEntity savedBoard = boardRepository.save(board);
-        try {
-            sendCreateMessage(userId, savedBoard.getId().toString());
-        } catch (Exception e) {
-            throw new ApplicationException(ErrorCode.INTERNAL_SERVER_ERROR, "서버 통신간 에러 발생");
+        APIResponse<Boolean> writeable = userServiceClient.writeable(authorization, userId);
+        if(writeable.getResult()) {
+            BoardEntity board = BoardEntity.builder()
+                    .createId(userId)
+                    .title(boardCreate.title())
+                    .content(boardCreate.content())
+                    .build();
+
+            BoardEntity savedBoard = boardRepository.save(board);
+
+            try {
+                sendCreateMessage(userId, savedBoard.getId().toString());
+            } catch (Exception e) {
+                throw new ApplicationException(ErrorCode.INTERNAL_SERVER_ERROR, "서버 통신간 에러 발생");
+            }
+            return savedBoard.getId();
         }
-        return savedBoard.getId();
+        throw new ApplicationException(ErrorCode.BOARD_MAX_COUNT, "최대 작성 가능한 게시글을 초과했습니다.");
     }
 
     @Override

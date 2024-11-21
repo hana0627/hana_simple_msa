@@ -102,21 +102,23 @@ public class BoardControllerTest {
     void 올바른_정보_입력시_글작성에_성공한다() throws Exception {
         //given
         String userId = "hanana";
+        String authorization = "authorization";
         BoardCreate boardCreate = new BoardCreate("title", "content");
-        given(boardService.create(userId, boardCreate)).willReturn(1L);
+        given(boardService.create(authorization, userId, boardCreate)).willReturn(1L);
 
         String json = om.writeValueAsString(boardCreate);
 
         //when && then
         mvc.perform(post("/v2/board")
                         .header("userId", userId)
+                        .header("authorization", authorization)
                         .content(json)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(1L))
                 .andDo(print());
 
-        then(boardService).should().create(userId, boardCreate);
+        then(boardService).should().create(authorization, userId, boardCreate);
 
     }
 

@@ -15,6 +15,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    environment:
+      KEY_STORE_PASSWORD: ${KEY_STORE_PASSWORD}
+      SPRING_PROFILES_ACTIVE: local
 
   apigateway-service:
     container_name: apigateway-service

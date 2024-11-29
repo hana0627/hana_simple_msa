@@ -1,5 +1,6 @@
 version: '3.9'
 
+# docker-compose -f compose.dev.yml up discovery-service -d --build
 services:
 
   discovery-service:
@@ -14,6 +15,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    environment:
+      KEY_STORE_PASSWORD: ${KEY_STORE_PASSWORD}
+      SPRING_PROFILES_ACTIVE: dev
 
   apigateway-service:
     container_name: apigateway-service
@@ -138,6 +142,22 @@ services:
     volumes:
       - ${POSTGRES_VOLUME_PATH}:/var/run/docker.sock
 
+  jenkins:
+    container_name: jenkins
+    image: jenkins/jenkins:lts
+    ports:
+      - "8080:8080"
+    networks:
+      - hana-network
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    profiles:
+      - dev
+
+volumes:
+  jenkins_data:
 
 networks:
   hana-network:

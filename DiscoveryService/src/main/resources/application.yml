@@ -4,6 +4,31 @@ server:
 spring:
   application:
     name: discoveryservice
+  config:
+    activate:
+      on-profile: local
+
+eureka:
+  client:
+    register-with-eureka: false #default : true
+    fetch-registry: false #default : true
+
+---
+
+
+server:
+  port: 8761
+  ssl:
+    key-store: classpath:keystore.p12
+    key-store-type: PKCS12
+    key-store-password: ${KEY_STORE_PASSWORD}
+
+spring:
+  application:
+    name: discoveryservice
+  config:
+    activate:
+      on-profile: dev
 
 eureka:
   client:

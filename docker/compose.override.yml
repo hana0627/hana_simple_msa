@@ -1,11 +1,11 @@
 version: '3.9'
 
-# docker-compose -f compose.dev.yml up discovery-service -d --build
+# docker compose -f compose.override.yml up -d --build
 services:
 
   discovery-service:
     container_name: discovery-service
-    build: /DiscoveryService
+    build: ../DiscoveryService
     ports:
       - "8761:8761"
     networks:
@@ -17,11 +17,11 @@ services:
       retries: 5
     environment:
       KEY_STORE_PASSWORD: ${KEY_STORE_PASSWORD}
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: local
 
   apigateway-service:
     container_name: apigateway-service
-    build: /APIGateway
+    build: ../APIGateway
     ports:
       - "8000:8000"
     networks:
@@ -31,12 +31,11 @@ services:
         condition: service_healthy
     environment:
       SECRET_KEY: ${SECRET_KEY}
-      SPRING_PROFILES_ACTIVE: dev
-
+      SPRING_PROFILES_ACTIVE: local
 
   user-service:
     container_name: user-service
-    build: /UserService
+    build: ../UserService
     ports:
       - "0:8080"
     networks:
@@ -53,11 +52,11 @@ services:
       MYSQL_USERNAME: ${MYSQL_USERNAME}
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       SECRET_KEY: ${SECRET_KEY}
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: local
 
   board-service:
     container_name: board-service
-    build: /BoardService
+    build: ../BoardService
     ports:
       - "0:8080"
     networks:
@@ -72,7 +71,7 @@ services:
       POSTGRES_USERNAME: ${POSTGRES_USERNAME}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       SECRET_KEY: ${SECRET_KEY}
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: local
 
   mysql:
     container_name: mysql
@@ -142,22 +141,6 @@ services:
     volumes:
       - ${POSTGRES_VOLUME_PATH}:/var/run/docker.sock
 
-  jenkins:
-    container_name: jenkins
-    build: /docker
-    ports:
-      - "8080:8080"
-    networks:
-      - hana-network
-    environment:
-      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-    profiles:
-      - dev
-
-volumes:
-  jenkins_data:
 
 networks:
   hana-network:
